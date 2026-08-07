@@ -1,0 +1,11 @@
+# 打包产物（18MB 的 exe，别塞进 git 历史；要分发就发 Release）
+dist/
+build/
+*.spec
+
+# 运行时生成的个人配置：窗口位置、缩放、历史记录
+calcbar.json
+
+# Python
+__pycache__/
+*.py[cod]
