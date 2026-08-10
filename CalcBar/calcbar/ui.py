@@ -73,6 +73,10 @@ class CalcBar:
         self._drafts = {False: "", True: ""}
         self.script: list[LineResult] = []       # 多行模式下每行的结果
         self._line_labels: list[tk.Label] = []
+        # 结果列的排版，滚动时照着重贴，见 _place_result_labels
+        self._result_rows: list[list] = []
+        self._result_col = self._result_room = self._result_pad_y = 0
+        self._scroll_pending = False
         # 尺寸两个自由度：zoom 管字大小，bar_width 管一行能装多少字
         self.zoom = self._clamp_zoom(self.config.get("zoom", 1.0))
         self.bar_width = self._clamp_width(self.config.get("width", METRICS.bar_width))
@@ -226,7 +230,8 @@ class CalcBar:
     def _build_entry(self) -> None:
         p = self.palette
         self.box = InputBox(
-            self.bar, self.multiline, self._on_change, font=self.font_input,
+            self.bar, self.multiline, self._on_change, self._on_scroll,
+            font=self.font_input,
             bg=p.bg, fg=p.fg, insertbackground=p.fg, bd=0, relief="flat",
             highlightthickness=0, exportselection=False,
             selectbackground=p.select_bg, selectforeground=p.select_fg,
@@ -242,11 +247,12 @@ class CalcBar:
             **flat)
         self.result = tk.Label(self.bar, text="", bg=p.bg, fg=p.muted,
                                font=self.font_result, **flat)
-        # 多行模式下每个显示行配一个结果标签，够用就行，多的藏起来
+        # 多行模式下每个显示行配一个结果标签，够用就行，多的藏起来。
+        # 多备一个：滚轮是按像素滚的，顶上和底下会各露半行，那半行也得有结果。
         self._line_labels = [
             tk.Label(self.bar, text="", bg=p.bg, fg=p.muted,
                      font=self.font_result, **flat)
-            for _ in range(_MAX_VISIBLE_LINES)] if self.multiline else []
+            for _ in range(_MAX_VISIBLE_LINES + 1)] if self.multiline else []
 
     def _build_button(self) -> None:
         p, m = self.palette, self.metrics
@@ -729,10 +735,21 @@ class CalcBar:
             else:
                 wanted.append([0, self._flash_text, self._flash_color])
 
+        # 存起来：滚动的时候文本没变，只要拿这份重新贴一遍就行
+        self._result_rows = wanted
+        self._result_col = col
+        self._result_room = max(self.px(40), right - text_x - col)
+        self._result_pad_y = pad_y
+
         self.root.update_idletasks()          # dlineinfo 得等布局落地才准
-        room = max(self.px(40), right - text_x - col)
+        self._place_result_labels()
+
+    def _place_result_labels(self) -> None:
+        """把结果贴到各自那行的基线上。滚过之后行的位置变了，重贴一遍就对齐了。"""
+        text_x = self.px(self.metrics.text_x)
+        ascent = self.font_result.metrics("ascent")
         used = 0
-        for index, shown, color in wanted:
+        for index, shown, color in self._result_rows:
             if used >= len(self._line_labels):
                 break
             where = self.box.line_metrics(index)
@@ -741,11 +758,31 @@ class CalcBar:
             top, baseline = where
             label = self._line_labels[used]
             used += 1
-            label.configure(text=self._fit(shown, self.font_result, room), fg=color)
-            label.place(x=text_x + col,
-                        y=pad_y + top + baseline - self.font_result.metrics("ascent"))
+            label.configure(text=self._fit(shown, self.font_result, self._result_room),
+                            fg=color)
+            label.place(x=text_x + self._result_col,
+                        y=self._result_pad_y + top + baseline - ascent)
         for label in self._line_labels[used:]:
             label.place_forget()
+
+    def _on_scroll(self) -> None:
+        """输入框的视野动了：结果列得跟着重贴，不然就停在上一屏的位置上。
+
+        这是 Tk 画屏幕的过程中回调的，当场改布局不安全，排到 idle 里做；
+        一次滚动会连着回调好几次，用标志位并成一次。
+        """
+        if not self.multiline or self._scroll_pending:
+            return
+        self._scroll_pending = True
+        self.root.after_idle(self._sync_result_labels)
+
+    def _sync_result_labels(self) -> None:
+        try:
+            if self.multiline and self.box is not None:   # 重建的空档里可能没有
+                self._place_result_labels()
+        finally:
+            # 贴完再放行：贴标签本身不动视野，中间的回调都是回声，丢掉正好
+            self._scroll_pending = False
 
     def _relayout_single(self) -> None:
         m = self.metrics
@@ -876,7 +913,13 @@ class CalcBar:
         return "break"
 
     def _rebuild(self, text: str, caret: str | None = None) -> None:
-        """控件类型或字号变了，只能把界面整个重搭一次。"""
+        """控件类型或字号变了，只能把界面整个重搭一次。
+
+        文本已经由调用方取走了，这里先把 box 摘掉再拆：不然 _build 途中
+        _bar_height 会去问一个已经销毁的控件，多行模式下直接抛 TclError。
+        摘掉之后它按一行算，末尾 _on_change 会把真正的高度补回来。
+        """
+        self.box = None
         self.outer.destroy()
         self._build()
         self.box.set_text(text, notify=False)

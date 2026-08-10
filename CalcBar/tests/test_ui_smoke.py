@@ -306,6 +306,32 @@ class UiSmokeTest(unittest.TestCase):
         return [label.cget("text") for label in self.app._line_labels
                 if label.winfo_manager()]
 
+    def anchored_results(self):
+        """贴在屏幕上的每个结果 -> (它落在第几行, 写的什么)。
+
+        行号是反查出来的：拿标签的 y 去比对每一行 dlineinfo 算出的基线位置。
+        对不上任何一行就是 None，说明结果飘了。
+        """
+        app = self.app
+        pad_y = max(0, (app.px(app.metrics.bar_height)
+                        - app.font_input.metrics("linespace")) // 2)
+        ascent = app.font_result.metrics("ascent")
+        rows = {}
+        for index in range(app.box.line_count()):
+            where = app.box.line_metrics(index)
+            if where is not None:
+                top, baseline = where
+                rows[pad_y + top + baseline - ascent] = index
+        return [(rows.get(label.winfo_y()), label.cget("text"))
+                for label in app._line_labels if label.winfo_manager()]
+
+    def long_script(self, count=30):
+        """一段够长、必须滚动才看得完的草稿：第 i 行（0 起）的结果是 i+2。"""
+        app = self.in_multiline()
+        app.set_text("\n".join(f"show {i}+1" for i in range(1, count + 1)))
+        app.root.update()
+        return app
+
     def test_ctrl_m_switches_the_input_widget(self):
         app = self.in_multiline()
         self.assertTrue(app.multiline)
@@ -357,6 +383,39 @@ class UiSmokeTest(unittest.TestCase):
         line_h = app.font_input.metrics("linespace")
         for upper, lower in zip(ys, ys[1:]):
             self.assertAlmostEqual(lower - upper, line_h, delta=2)
+
+    def test_results_stay_on_their_lines_while_scrolling(self):
+        """滚轮/光标把视野挪走之后，结果列必须跟着一起挪。"""
+        app = self.long_script()
+        for step in (0, -6, 3, -20, 9):
+            if step:
+                app.entry.yview_scroll(step, "units")
+            app.root.update()
+            anchored = self.anchored_results()
+            self.assertTrue(anchored)
+            for index, text in anchored:
+                self.assertIsNotNone(index, f"结果「{text}」没落在任何一行上")
+                self.assertEqual(text, f"= {index + 2}")
+
+    def test_every_visible_line_keeps_its_result_after_a_pixel_scroll(self):
+        """滚轮是按像素滚的，会露出半行——那半行也得有自己的结果。"""
+        app = self.long_script()
+        app.entry.yview_moveto(0.0)          # 先离开底部，不然滚不动
+        app.root.update()
+        app.entry.yview_scroll(app.font_input.metrics("linespace") // 2, "pixels")
+        app.root.update()
+        visible = [i for i in range(30) if app.box.line_metrics(i) is not None]
+        self.assertEqual(len(self.shown_results()), len(visible))
+
+    def test_zooming_in_multiline_keeps_working(self):
+        """Ctrl+滚轮会重建界面，重建时不能再去问已经拆掉的旧输入框。"""
+        app = self.in_multiline()
+        self.addCleanup(app.reset_size)
+        app.set_text("show 1+1\nshow 2+2")
+        app.zoom_by(2)
+        app.root.update()
+        self.assertEqual(app.text(), "show 1+1\nshow 2+2")
+        self.assertEqual(self.shown_results(), ["= 2", "= 4"])
 
     def test_a_broken_line_shows_red_without_killing_the_rest(self):
         app = self.in_multiline()

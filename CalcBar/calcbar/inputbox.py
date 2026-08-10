@@ -19,7 +19,8 @@ class InputBox:
     """算式输入区。``multiline`` 决定底下是 Entry 还是 Text。"""
 
     def __init__(self, parent: tk.Misc, multiline: bool,
-                 on_change: Callable[[], None], **style) -> None:
+                 on_change: Callable[[], None],
+                 on_scroll: Callable[[], None] | None = None, **style) -> None:
         self.multiline = multiline
         self._on_change = on_change
         self._last_seen = ""
@@ -31,6 +32,11 @@ class InputBox:
                                   padx=0, pady=0, **style)
             self.widget.bind("<KeyRelease>", lambda _: self._notify())
             self.widget.bind("<<Modified>>", self._on_modified)
+            if on_scroll is not None:
+                # 文本不变、视野却动了的路子太多（滚轮、光标带着走、拖选到边上
+                # 自动滚、see()），一个个绑漏一个就错位。yscrollcommand 是 Tk
+                # 自己在视野变了之后叫的，一处就能全收住。
+                self.widget.configure(yscrollcommand=lambda *_: on_scroll())
         else:
             self.var = tk.StringVar(master=parent)
             self.var.trace_add("write", lambda *_: self._notify())
