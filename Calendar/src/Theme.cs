@@ -4,14 +4,14 @@ using Microsoft.Win32;
 
 namespace KKCalendar
 {
-    /// <summary>跟随 Windows 的深浅色和强调色。</summary>
+    /// <summary>Windows のライト / ダークとアクセントカラーに追従する。</summary>
     internal sealed class Theme
     {
         public bool Dark { get; private set; }
         public Color Background, Text, Secondary, Tertiary, Separator, Hover, Pressed;
         public Color Sunday, Saturday, Accent, OnAccent;
 
-        /// <summary>开发截图时强制深色/浅色；null = 跟随系统。</summary>
+        /// <summary>開発用のスクリーンショットでダーク / ライトを強制する。null = システムに追従。</summary>
         internal static bool? ForceDark;
 
         public static Theme Current()
@@ -42,13 +42,13 @@ namespace KKCalendar
                 t.Sunday = Rgb(0xC9, 0x2A, 0x2F);
                 t.Saturday = Rgb(0x1A, 0x5F, 0xB4);
             }
-            // Win11 的「今天」：深色主题用浅一档的强调色配黑字，浅色主题用深一档的配白字
+            // Win11 の「今日」：ダークテーマでは 1 段明るいアクセントカラーに黒文字、ライトテーマでは 1 段暗いものに白文字
             t.Accent = AccentShade(dark ? 1 : 4) ?? (dark ? Rgb(0x60, 0xCD, 0xFF) : Rgb(0x00, 0x5F, 0xB8));
             t.OnAccent = dark ? Rgb(0x00, 0x00, 0x00) : Rgb(0xFF, 0xFF, 0xFF);
             return t;
         }
 
-        /// <summary>任务栏是浅色还是深色（和「应用」的深浅色是两个独立设置）。</summary>
+        /// <summary>タスクバーがライトかダークか（「アプリ」のライト / ダークとは別の設定）。</summary>
         public static bool TaskbarIsLight() =>
             ReadBool(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "SystemUsesLightTheme", false);
 
@@ -74,7 +74,7 @@ namespace KKCalendar
         }
 
         /// <summary>
-        /// AccentPalette 是 8 个 RGBA：浅3 浅2 浅1 本色 深1 深2 深3 (未用)。
+        /// AccentPalette は 8 個の RGBA：明3 明2 明1 基本色 暗1 暗2 暗3（未使用）。
         /// </summary>
         static Color? AccentShade(int index)
         {

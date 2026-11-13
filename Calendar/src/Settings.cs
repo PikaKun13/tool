@@ -6,8 +6,8 @@ using System.Text;
 namespace KKCalendar
 {
     /// <summary>
-    /// 设置和下载的数据放在 exe 旁边（绿色版）；那里写不了（比如放进了 Program Files）
-    /// 就退到 %LOCALAPPDATA%\KKCalendar。不写注册表。
+    /// 設定とダウンロードしたデータは exe の横に置く（ポータブル版）。そこに書き込めない（Program Files に置いた場合など）ときは
+    /// %LOCALAPPDATA%\KKCalendar に置く。レジストリは使わない。
     /// </summary>
     internal sealed class Settings
     {

@@ -1,8 +1,8 @@
-"""符号 / 函数选择面板的内容。
+"""記号 / 関数を選ぶパネルの中身。
 
-每一项 ``Item``：``label`` 是按钮上显示的字，``insert`` 是真正插进输入框的
-Python 文本，``caret_back`` 是插入后光标要往回移几格（``sqrt()`` 移 1 格，
-光标正好落在括号里）。
+各 ``Item``：``label`` はボタンに表示する文字、``insert`` は実際に入力欄に挿入する
+Python のテキスト、``caret_back`` は挿入後にカーソルを何文字戻すか（``sqrt()`` なら 1 文字戻して、
+カーソルがちょうど括弧の中に来る）。
 """
 
 from __future__ import annotations
@@ -33,64 +33,64 @@ class Section:
 
 
 SECTIONS: tuple[Section, ...] = (
-    Section("运算符 / 常量", (
-        Item.token("**", tip="乘方，2**3 = 8"),
-        Item.token("//", tip="整除，10//3 = 3"),
-        Item.token("%", tip="取余，10%3 = 1"),
-        Item("( )", "()", 1, "括号"),
-        Item.token(",", tip="分隔多个参数"),
+    Section("演算子 / 定数", (
+        Item.token("**", tip="べき乗、2**3 = 8"),
+        Item.token("//", tip="切り捨て除算、10//3 = 3"),
+        Item.token("%", tip="剰余、10%3 = 1"),
+        Item("( )", "()", 1, "括弧"),
+        Item.token(",", tip="複数の引数を区切る"),
         Item.token("π", "pi", tip="3.14159…"),
         Item.token("e", tip="2.71828…"),
         Item.token("τ", "tau", tip="2π"),
-        Item.token("∞", "inf", tip="无穷大"),
-        Item.token("ans", tip="上一次的结果"),
-        Item.token("j", tip="虚数单位，3+4j；单写 j 就是 1j"),
+        Item.token("∞", "inf", tip="無限大"),
+        Item.token("ans", tip="前回の結果"),
+        Item.token("j", tip="虚数単位、3+4j。j だけなら 1j"),
     )),
-    Section("常用函数", (
+    Section("よく使う関数", (
         Item.func("sqrt", "平方根"),
         Item.func("cbrt", "立方根"),
-        Item.func("exp", "e 的多少次方"),
-        Item.func("ln", "自然对数"),
-        Item.func("log", "log(x) 自然对数 / log(x, 底)"),
-        Item.func("log2", "以 2 为底"),
-        Item.func("log10", "以 10 为底"),
-        Item.func("abs", "绝对值"),
-        Item.func("round", "round(x, 位数)；正好 .5 时取偶数，round(2.5)=2"),
+        Item.func("exp", "e の x 乗"),
+        Item.func("ln", "自然対数"),
+        Item.func("log", "log(x) 自然対数 / log(x, 底)"),
+        Item.func("log2", "底が 2 の対数"),
+        Item.func("log10", "底が 10 の対数（常用対数）"),
+        Item.func("abs", "絶対値"),
+        Item.func("round", "round(x, 桁数)。ちょうど .5 なら偶数へ丸める：round(2.5)=2"),
         Item.func("pow", "pow(x, y) = x**y"),
     )),
-    Section("三角 / 双曲", (
-        Item.func("sin", "正弦，参数是弧度"),
-        Item.func("cos", "余弦，参数是弧度"),
-        Item.func("tan", "正切，参数是弧度"),
-        Item.func("asin", "反正弦"),
-        Item.func("acos", "反余弦"),
-        Item.func("atan", "反正切"),
+    Section("三角 / 双曲線", (
+        Item.func("sin", "正弦（引数はラジアン）"),
+        Item.func("cos", "余弦（引数はラジアン）"),
+        Item.func("tan", "正接（引数はラジアン）"),
+        Item.func("asin", "逆正弦"),
+        Item.func("acos", "逆余弦"),
+        Item.func("atan", "逆正接"),
         Item.func("atan2", "atan2(y, x)"),
-        Item.func("sinh", "双曲正弦"),
-        Item.func("cosh", "双曲余弦"),
-        Item.func("tanh", "双曲正切"),
-        Item.func("degrees", "弧度转角度"),
-        Item.func("radians", "角度转弧度"),
+        Item.func("sinh", "双曲線正弦"),
+        Item.func("cosh", "双曲線余弦"),
+        Item.func("tanh", "双曲線正接"),
+        Item.func("degrees", "ラジアン → 度"),
+        Item.func("radians", "度 → ラジアン"),
     )),
-    Section("整数 / 统计", (
-        Item.func("floor", "向下取整"),
-        Item.func("ceil", "向上取整"),
-        Item.func("trunc", "去掉小数部分"),
-        Item.func("isqrt", "整数平方根"),
-        Item.func("factorial", "阶乘"),
-        Item.func("gcd", "最大公约数"),
+    Section("整数 / 統計", (
+        Item.func("floor", "切り捨て（床関数）"),
+        Item.func("ceil", "切り上げ（天井関数）"),
+        Item.func("trunc", "小数部分を取り除く"),
+        Item.func("isqrt", "整数の平方根"),
+        Item.func("factorial", "階乗"),
+        Item.func("gcd", "最大公約数"),
         Item.func("lcm", "最小公倍数"),
-        Item.func("comb", "组合数 C(n, k)"),
-        Item.func("perm", "排列数 A(n, k)"),
+        Item.func("comb", "組み合わせ C(n, k)"),
+        Item.func("perm", "順列 P(n, k)"),
         Item.func("hypot", "hypot(3, 4) = 5"),
-        Item.func("min", "最小值"),
-        Item.func("max", "最大值"),
-        Item.func("sum", "求和，sum(range(101))"),
+        Item.func("min", "最小値"),
+        Item.func("max", "最大値"),
+        Item.func("sum", "合計、sum(range(101))"),
     )),
 )
 
-HINT = ("Enter 复制结果　↑↓ 翻历史　Esc 清空/关闭　Ctrl+K 收起面板　Ctrl+M 多行　"
-        "拖左右边缘改宽度　Ctrl+滚轮缩放")
+HINT = ("Enter 結果をコピー　↑↓ 履歴　Esc クリア/閉じる　Ctrl+K パネルを閉じる　Ctrl+M 複数行　"
+        "左右の端をドラッグで幅を変更　Ctrl+ホイールで拡大縮小")
 
-HINT_MULTI = ("Enter 换行　Ctrl+Enter 复制结果　Ctrl+↑↓ 翻历史　"
-              "行首 show x 或 show(x) 显示这一步　Ctrl+M 回单行")
+HINT_MULTI = ("Enter 改行　Ctrl+Enter 結果をコピー　Ctrl+↑↓ 履歴　"
+              "行頭に show x か show(x) でその行を表示　Ctrl+M 1 行に戻る")

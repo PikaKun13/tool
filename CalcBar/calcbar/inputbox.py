@@ -1,12 +1,12 @@
-"""把单行 ``Entry`` 和多行 ``Text`` 包成同一套接口。
+"""1 行の ``Entry`` と複数行の ``Text`` を同じインターフェースで包む。
 
-两种控件的 API 完全不通（``get()`` 对 ``get("1.0","end-1c")``、``icursor`` 对
-``mark_set``、有没有 ``textvariable``…）。如果让 ``ui.py`` 到处 ``if 多行``，
-那个文件很快就没法看了。所以取文本、改文本、光标、选区这些事情都收在这里，
-``ui.py`` 只管往哪儿摆、结果画在哪儿。
+2 つのウィジェットの API はまるで違う（``get()`` と ``get("1.0","end-1c")``、``icursor`` と
+``mark_set``、``textvariable`` の有無…）。``ui.py`` のあちこちに ``if 複数行`` を書いたら、
+あのファイルはすぐ読めなくなる。だからテキストの取得・変更、カーソル、選択範囲といった処理はすべてここにまとめ、
+``ui.py`` はどこに置くか、結果をどこに描くかだけを扱う。
 
-变更通知统一走 ``_notify``：拿当前文本跟上次比，真变了才回调，
-所以「敲键盘」「粘贴」「程序改写」三条路重复触发也不会多算。
+変更通知はすべて ``_notify`` を通す：今のテキストを前回と比べ、本当に変わったときだけコールバックするので、
+「キー入力」「貼り付け」「プログラムによる書き換え」の 3 経路から重ねて呼ばれても余計な計算はしない。
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from typing import Callable
 
 
 class InputBox:
-    """算式输入区。``multiline`` 决定底下是 Entry 还是 Text。"""
+    """式の入力欄。``multiline`` で中身が Entry か Text かが決まる。"""
 
     def __init__(self, parent: tk.Misc, multiline: bool,
                  on_change: Callable[[], None],
@@ -33,9 +33,9 @@ class InputBox:
             self.widget.bind("<KeyRelease>", lambda _: self._notify())
             self.widget.bind("<<Modified>>", self._on_modified)
             if on_scroll is not None:
-                # 文本不变、视野却动了的路子太多（滚轮、光标带着走、拖选到边上
-                # 自动滚、see()），一个个绑漏一个就错位。yscrollcommand 是 Tk
-                # 自己在视野变了之后叫的，一处就能全收住。
+                # テキストは変わらないのに表示範囲だけ動く経路は多すぎる（ホイール、カーソルに引っ張られる、端までドラッグ選択して
+                # 自動スクロール、see()）。1 つずつ割り当てると、1 つ漏れただけでずれる。yscrollcommand は Tk が
+                # 表示範囲が変わった後に自分で呼ぶので、ここ 1 か所ですべて拾える。
                 self.widget.configure(yscrollcommand=lambda *_: on_scroll())
         else:
             self.var = tk.StringVar(master=parent)
@@ -43,7 +43,7 @@ class InputBox:
             self.widget = tk.Entry(parent, textvariable=self.var, **style)
 
     # ------------------------------------------------------------------
-    # 变更通知
+    # 変更通知
     # ------------------------------------------------------------------
     def _notify(self) -> None:
         current = self.text()
@@ -52,12 +52,12 @@ class InputBox:
             self._on_change()
 
     def _on_modified(self, _event) -> None:
-        """Text 的兜底信号：鼠标拖拽、撤销这些没有 KeyRelease 的改动。"""
+        """Text の最後の砦となる通知：マウスのドラッグや元に戻すなど、KeyRelease を伴わない変更。"""
         self.widget.edit_modified(False)
         self._notify()
 
     # ------------------------------------------------------------------
-    # 取 / 改文本
+    # テキストの取得 / 変更
     # ------------------------------------------------------------------
     def text(self) -> str:
         if self.multiline:
@@ -65,7 +65,7 @@ class InputBox:
         return self.var.get()
 
     def set_text(self, value: str, notify: bool = True) -> None:
-        """``notify=False`` 用于「在 on_change 里回写清理过的文本」，避免绕回来。"""
+        """``notify=False`` は「on_change の中で整えたテキストを書き戻す」とき用。呼び出しが自分に戻ってこないようにする。"""
         if not notify:
             self._last_seen = value
         if self.multiline:
@@ -78,7 +78,7 @@ class InputBox:
             self._notify()
 
     def insert(self, text: str, caret_back: int = 0) -> None:
-        """在光标处插入；``caret_back`` 是插完之后光标往回退几格。"""
+        """カーソル位置に挿入する。``caret_back`` は挿入後にカーソルを何文字戻すか。"""
         self.focus()
         if self.multiline:
             if self.widget.tag_ranges("sel"):
@@ -95,7 +95,7 @@ class InputBox:
         self._notify()
 
     # ------------------------------------------------------------------
-    # 光标与选区
+    # カーソルと選択範囲
     # ------------------------------------------------------------------
     def focus(self) -> None:
         try:
@@ -111,7 +111,7 @@ class InputBox:
             self.widget.icursor("end")
 
     def caret(self) -> str:
-        """当前光标位置，格式随控件；只用来在重建之后放回原处。"""
+        """現在のカーソル位置（形式はウィジェットによる）。作り直した後に元の位置へ戻すためだけに使う。"""
         return str(self.widget.index("insert"))
 
     def restore_caret(self, where: str) -> None:
@@ -144,7 +144,7 @@ class InputBox:
             return None
 
     # ------------------------------------------------------------------
-    # 按行看（只有多行模式用得上）
+    # 行単位で見る（複数行モードでだけ使う）
     # ------------------------------------------------------------------
     def lines(self) -> list[str]:
         return self.text().split("\n")
@@ -153,9 +153,9 @@ class InputBox:
         return max(1, len(self.lines()))
 
     def line_metrics(self, index: int) -> tuple[int, int] | None:
-        """第 ``index`` 行（0 起）在控件里的 ``(顶边 y, 基线偏移)``。
+        """``index`` 行目（0 始まり）のウィジェット内での ``(上端 y, ベースラインのオフセット)``。
 
-        行滚出视野时返回 ``None``——对应的结果标签就该藏起来。
+        行が表示範囲の外にスクロールしたら ``None`` を返す——対応する結果ラベルは隠すべき。
         """
         if not self.multiline:
             return None

@@ -8,7 +8,7 @@ using System.Text;
 namespace KKCalendar.Core
 {
     /// <summary>
-    /// 祝日查询。内閣府 CSV 覆盖到的年份以 CSV 为准（官方），其余年份按法律规则计算。
+    /// 祝日の照会。内閣府 CSV に含まれる年は CSV を正とし（公式）、それ以外の年は法律の規定どおりに計算する。
     /// </summary>
     public sealed class HolidayBook
     {
@@ -18,7 +18,7 @@ namespace KKCalendar.Core
         readonly Dictionary<int, SortedDictionary<DateTime, string>> _byYear =
             new Dictionary<int, SortedDictionary<DateTime, string>>();
 
-        /// <summary>CSV 覆盖的年份范围；没有 CSV 时两者都是 0。</summary>
+        /// <summary>CSV に含まれる年の範囲。CSV がないときはどちらも 0。</summary>
         public int OfficialFirstYear { get; }
         public int OfficialLastYear { get; }
 
@@ -51,8 +51,8 @@ namespace KKCalendar.Core
                 {
                     if (pair.Key.Year != year)
                         continue;
-                    // CSV 把振替休日、国民の休日都写成「休日」，特别法的日子写成「休日（祝日扱い）」，
-                    // 能从规则里查到具体名字的就用具体名字
+                    // CSV では振替休日も国民の休日も「休日」、特別法による日は「休日（祝日扱い）」と書かれているので、
+                    // 規則から具体的な名前がわかるものはそちらを使う
                     string name = pair.Value;
                     if (IsGenericName(name) && rules.TryGetValue(pair.Key, out var ruleName))
                         name = ruleName;
@@ -79,7 +79,7 @@ namespace KKCalendar.Core
         public List<KeyValuePair<DateTime, string>> InMonth(int year, int month) =>
             ForYear(year).Where(p => p.Key.Month == month).ToList();
 
-        /// <summary>今天之后（不含今天）的下一个祝日。</summary>
+        /// <summary>今日より後（今日は含まない）の次の祝日。</summary>
         public KeyValuePair<DateTime, string>? NextAfter(DateTime date)
         {
             for (int year = date.Year; year <= Math.Min(date.Year + 2, AstroTables.LastYear); year++)
@@ -96,8 +96,8 @@ namespace KKCalendar.Core
         static Encoding ShiftJis => Encoding.GetEncoding(932);
 
         /// <summary>
-        /// 解析内閣府 CSV（Shift_JIS，「yyyy/m/d,名称」）。格式不对就抛 FormatException，
-        /// 免得把一份坏数据存下来。
+        /// 内閣府 CSV（Shift_JIS、「yyyy/m/d,名称」）を解析する。形式がおかしければ FormatException を投げて、
+        /// 壊れたデータを保存してしまわないようにする。
         /// </summary>
         public static Dictionary<DateTime, string> ParseCsv(byte[] data)
         {
@@ -115,14 +115,14 @@ namespace KKCalendar.Core
                         continue;
                     int comma = line.IndexOf(',');
                     if (comma <= 0)
-                        throw new FormatException("CSV 行格式不对: " + line);
+                        throw new FormatException("CSV の行の形式が不正です: " + line);
                     var date = DateTime.ParseExact(line.Substring(0, comma).Trim(), "yyyy/M/d",
                                                    CultureInfo.InvariantCulture);
                     result[date] = line.Substring(comma + 1).Trim();
                 }
             }
             if (result.Count < 500)
-                throw new FormatException("CSV 里的祝日太少，可能不是内閣府的文件");
+                throw new FormatException("CSV の祝日が少なすぎます。内閣府のファイルではない可能性があります");
             return result;
         }
 
@@ -132,14 +132,14 @@ namespace KKCalendar.Core
             using (var buffer = new MemoryStream())
             {
                 if (stream == null)
-                    throw new InvalidOperationException("找不到内置的 syukujitsu.csv");
+                    throw new InvalidOperationException("内蔵の syukujitsu.csv が見つかりません");
                 stream.CopyTo(buffer);
                 return buffer.ToArray();
             }
         }
 
         /// <summary>
-        /// 优先读下载过的 CSV（覆盖年份更晚的那份），读不了就用内置的。
+        /// ダウンロード済みの CSV（収録年がより新しいほう）を優先して読み、読めなければ内蔵のものを使う。
         /// </summary>
         public static HolidayBook Load(string? downloadedPath, out HolidaySource source)
         {
@@ -178,7 +178,7 @@ namespace KKCalendar.Core
             UpdatedAt = updatedAt;
         }
 
-        /// <summary>true = 用的是联网下载的 CSV；false = 程序内置的那份。</summary>
+        /// <summary>true = ネットからダウンロードした CSV、false = プログラムに内蔵のもの。</summary>
         public bool Downloaded { get; }
         public DateTime UpdatedAt { get; }
     }

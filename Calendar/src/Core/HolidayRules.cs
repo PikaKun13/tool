@@ -4,9 +4,9 @@ using System.Collections.Generic;
 namespace KKCalendar.Core
 {
     /// <summary>
-    /// 按《国民の祝日に関する法律》及其历次修订，纯规则地算出某一年的祝日・休日。
-    /// 1948-07-20 施行之前没有祝日；春分/秋分取自天文表（1900–2100）。
-    /// 内閣府的官方 CSV 只覆盖到明年，再往后就靠这里。
+    /// 「国民の祝日に関する法律」とその改正の経緯に従って、ある年の祝日・休日を規則だけで計算する。
+    /// 1948-07-20 の施行より前は祝日なし。春分・秋分は天文表（1900–2100）から取る。
+    /// 内閣府の公式 CSV は翌年までしかないので、その先はここで計算する。
     /// </summary>
     public static class HolidayRules
     {
@@ -42,13 +42,13 @@ namespace KKCalendar.Core
                 var next = day.AddDays(1);
                 if (day < Revision2007)
                 {
-                    // 旧法：只看「翌日」，翌日本身就是祝日的话就没有振替
+                    // 旧法：「翌日」だけを見る。翌日自体が祝日なら振替はない
                     if (!shukujitsu.Contains(next))
                         substitutes.Add(next);
                 }
                 else
                 {
-                    // 2007 年起：往后找最近的一个「不是祝日」的日子
+                    // 2007 年から：後ろに向かって、いちばん近い「祝日でない」日を探す
                     while (shukujitsu.Contains(next))
                         next = next.AddDays(1);
                     substitutes.Add(next);
@@ -58,7 +58,7 @@ namespace KKCalendar.Core
                 if (day.Year == year)
                     result[day] = Substitute;
 
-            // 国民の休日：前一天和后一天都是祝日的日子
+            // 国民の休日：前日と翌日がどちらも祝日である日
             foreach (var day in shukujitsu)
             {
                 var middle = day.AddDays(1);
@@ -68,7 +68,7 @@ namespace KKCalendar.Core
                     continue;
                 if (middle < Revision2007)
                 {
-                    // 旧法：日曜日和振替休日不算
+                    // 旧法：日曜日と振替休日は対象外
                     if (middle.DayOfWeek == DayOfWeek.Sunday || result.ContainsKey(middle))
                         continue;
                 }
@@ -78,7 +78,7 @@ namespace KKCalendar.Core
             return result;
         }
 
-        /// <summary>法律直接写明的「国民の祝日」，以及按特别法当作祝日的那几天。</summary>
+        /// <summary>法律に明記された「国民の祝日」と、特別法で祝日扱いになる日。</summary>
         static IEnumerable<KeyValuePair<DateTime, string>> NationalHolidays(int y)
         {
             KeyValuePair<DateTime, string> On(int month, int day, string name) =>
@@ -115,7 +115,7 @@ namespace KKCalendar.Core
             if (y >= 1949)
                 yield return On(5, 5, "こどもの日");
 
-            // 海の日（2020、2021 年因东京奥运挪过）
+            // 海の日（2020・2021 年は東京オリンピックのため移動）
             if (y == 2020)
                 yield return On(7, 23, "海の日");
             else if (y == 2021)
@@ -140,7 +140,7 @@ namespace KKCalendar.Core
 
             yield return On(9, AstroTables.AutumnalEquinoxDay[y - AstroTables.FirstYear], "秋分の日");
 
-            // 体育の日 → スポーツの日（2020 年改名；2020、2021 年因奥运挪到 7 月）
+            // 体育の日 → スポーツの日（2020 年に改称。2020・2021 年はオリンピックのため 7 月に移動）
             if (y == 2020)
                 yield return On(7, 24, "スポーツの日");
             else if (y == 2021)
@@ -158,7 +158,7 @@ namespace KKCalendar.Core
             if (y >= 1989 && y <= 2018)
                 yield return On(12, 23, "天皇誕生日");
 
-            // 特别法规定的一次性休日（按祝日对待）
+            // 特別法による一度限りの休日（祝日扱い）
             switch (y)
             {
                 case 1959: yield return On(4, 10, "結婚の儀"); break;
@@ -172,7 +172,7 @@ namespace KKCalendar.Core
             }
         }
 
-        /// <summary>某月第 n 个星期一是几号（Happy Monday 制度）。</summary>
+        /// <summary>ある月の第 n 月曜日が何日か（ハッピーマンデー制度）。</summary>
         public static int NthMonday(int year, int month, int n)
         {
             var first = new DateTime(year, month, 1);

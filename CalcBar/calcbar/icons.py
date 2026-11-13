@@ -1,8 +1,8 @@
-"""图标绘制。
+"""アイコンの描画。
 
-用 Pillow 4 倍超采样画完再缩小，得到抗锯齿的放大镜和计算器图标，
-输出成 base64 PNG，交给 ``tk.PhotoImage(data=...)``（不需要 ImageTk）。
-没装 Pillow 也能跑：``available()`` 返回 False，界面会退回用 Canvas 画。
+Pillow で 4 倍のスーパーサンプリングで描いてから縮小し、アンチエイリアスの効いた虫眼鏡と電卓のアイコンを作り、
+base64 の PNG として ``tk.PhotoImage(data=...)`` に渡す（ImageTk は不要）。
+Pillow がなくても動く：``available()`` が False を返し、画面は Canvas での描画に切り替わる。
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ try:
 except ImportError:                               # pragma: no cover
     _PIL = False
 
-SS = 4          # 超采样倍数
+SS = 4          # スーパーサンプリングの倍率
 
 
 def available() -> bool:
@@ -38,7 +38,7 @@ def _finish(image, size: int) -> str:
 
 
 def rounded_chip(width: int, height: int, bg: str, fill: str) -> str:
-    """面板小按钮的圆角底：tk 的 Label 画不出圆角，就贴一张图。"""
+    """パネルの小ボタンの角丸の下地：tk の Label では角丸を描けないので、画像を貼る。"""
     image = Image.new("RGB", (width * SS, height * SS), bg)
     draw = ImageDraw.Draw(image)
     draw.rounded_rectangle([0, 0, width * SS - 1, height * SS - 1],
@@ -47,7 +47,7 @@ def rounded_chip(width: int, height: int, bg: str, fill: str) -> str:
 
 
 def magnifier(size: int, bg: str, color: str) -> str:
-    """左侧的放大镜：一个圆环加一根斜柄。"""
+    """左側の虫眼鏡：輪と斜めの柄。"""
     image = _canvas(size, bg)
     draw = ImageDraw.Draw(image)
     n = size * SS
@@ -59,7 +59,7 @@ def magnifier(size: int, bg: str, color: str) -> str:
     start = cx + radius * 0.72
     draw.line([start, start, n * 0.90, n * 0.90],
               fill=color, width=stroke)
-    # 手柄末端补一个圆点，模拟圆头线帽
+    # 柄の端に丸を足して、丸い線端に見せる
     cap = stroke / 2
     draw.ellipse([n * 0.90 - cap, n * 0.90 - cap, n * 0.90 + cap, n * 0.90 + cap],
                  fill=color)
@@ -67,7 +67,7 @@ def magnifier(size: int, bg: str, color: str) -> str:
 
 
 def calculator(size: int, bg: str, plate: str, glyph: str, screen: str) -> str:
-    """右侧按钮：圆角底板 + 一个计算器小图标。"""
+    """右側のボタン：角丸の下地 + 小さな電卓のアイコン。"""
     image = _canvas(size, bg)
     draw = ImageDraw.Draw(image)
     n = size * SS
@@ -81,14 +81,14 @@ def calculator(size: int, bg: str, plate: str, glyph: str, screen: str) -> str:
     height = body[3] - body[1]
     margin = width * 0.14
 
-    # 顶部显示屏
+    # 上部の表示窓
     screen_h = height * 0.22
     draw.rounded_rectangle(
         [body[0] + margin, body[1] + margin,
          body[2] - margin, body[1] + margin + screen_h],
         radius=n * 0.02, fill=screen)
 
-    # 3 列 x 3 行按键
+    # 3 列 x 3 行のキー
     top = body[1] + margin + screen_h + height * 0.12
     grid_w = width - margin * 2
     grid_h = body[3] - margin - top

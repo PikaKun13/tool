@@ -9,7 +9,7 @@ using Microsoft.Win32;
 namespace KKCalendar
 {
     /// <summary>
-    /// 常驻托盘。只允许一个实例：再启动一次 exe 就是把已经在跑的那个的日历弹出来。
+    /// トレイに常駐。インスタンスは 1 つだけ：exe をもう一度起動すると、すでに動いているほうのカレンダーを表示する。
     /// </summary>
     public partial class App : Application
     {
@@ -34,11 +34,11 @@ namespace KKCalendar
             base.OnStartup(e);
             DispatcherUnhandledException += (s, args) =>
             {
-                Settings.Log("未处理的异常: " + args.Exception);
+                Settings.Log("未処理の例外: " + args.Exception);
                 args.Handled = true;
             };
             AppDomain.CurrentDomain.UnhandledException += (s, args) =>
-                Settings.Log("致命异常: " + args.ExceptionObject);
+                Settings.Log("致命的な例外: " + args.ExceptionObject);
 
             if (DevTools.TryRun(e.Args, this))
                 return;
@@ -47,7 +47,7 @@ namespace KKCalendar
             _mutex = new Mutex(true, MutexName, out bool first);
             if (!first || exitOnly)
             {
-                // 已经有一个在跑：让它弹出日历（或者退出），自己退出
+                // すでに 1 つ動いている：そちらにカレンダーを表示させ（または終了させ）、自分は終了する
                 Native.AllowSetForegroundWindow(Native.ASFW_ANY);
                 try { EventWaitHandle.OpenExisting(exitOnly ? ExitEventName : ShowEventName).Set(); }
                 catch (Exception) { }
@@ -63,7 +63,7 @@ namespace KKCalendar
 
             StartTray();
             if (!e.Args.Contains(AutoStart.BackgroundArg))
-                ShowFromCorner();     // 手动双击启动时弹一下，让人知道它在了
+                ShowFromCorner();     // 手動で起動したときは一度表示して、起動したことがわかるようにする
         }
 
         internal void StartTray()
@@ -88,7 +88,7 @@ namespace KKCalendar
             RefreshTray();
             _tray.Show();
 
-            // 过了零点 / 从睡眠醒来 / 改了系统时间：都靠这个轮询发现，开销可以忽略
+            // 0 時を過ぎた / スリープから復帰した / システム時刻を変えた：どれもこのポーリングで検知する。負荷は無視できる程度
             _clock = new DispatcherTimer { Interval = TimeSpan.FromSeconds(15) };
             _clock.Tick += (s, e) => CheckDate();
             _clock.Start();
@@ -103,7 +103,7 @@ namespace KKCalendar
 
         void OnPreferenceChanged(object? sender, UserPreferenceChangedEventArgs e)
         {
-            // 深浅色、强调色的切换都走 General
+            // ライト / ダークやアクセントカラーの切り替えは、どれも General で届く
             if (e.Category != UserPreferenceCategory.General && e.Category != UserPreferenceCategory.Color)
                 return;
             Dispatcher.BeginInvoke(new Action(() =>
@@ -140,12 +140,12 @@ namespace KKCalendar
 
         void RefreshDataInfo()
         {
-            string when = _source.Downloaded ? $"{_source.UpdatedAt:yyyy/MM/dd} 更新" : "程序内置";
-            _tray?.SetDataInfo($"祝日数据收录到 {_book.OfficialLastYear} 年（{when}）");
+            string when = _source.Downloaded ? $"{_source.UpdatedAt:yyyy/MM/dd} 更新" : "内蔵データ";
+            _tray?.SetDataInfo($"祝日データ：{_book.OfficialLastYear} 年まで（{when}）");
         }
 
         // ------------------------------------------------------------------
-        // 弹出 / 收起
+        // 表示 / 非表示
         // ------------------------------------------------------------------
 
         void TogglePopup()
@@ -157,13 +157,13 @@ namespace KKCalendar
                 _popup.HidePopup();
                 return;
             }
-            // 日历开着时点托盘图标：按下那一刻日历已经因失焦收起了，这次点击就别再把它弹出来
+            // カレンダーが開いているときにトレイアイコンをクリック：押した瞬間にフォーカスを失って閉じているので、このクリックでまた開かないようにする
             if (unchecked(Environment.TickCount - _popup.LastHiddenAt) < 400)
                 return;
             _popup.ShowNear(Native.CursorPosition());
         }
 
-        /// <summary>不是从托盘点出来的（比如双击 exe）：弹在主显示器右下角。</summary>
+        /// <summary>トレイからではなく（exe のダブルクリックなどで）開くとき：メインディスプレイの右下に表示する。</summary>
         void ShowFromCorner()
         {
             var corner = new Native.POINT
@@ -175,7 +175,7 @@ namespace KKCalendar
         }
 
         // ------------------------------------------------------------------
-        // 更新日历
+        // 祝日データの更新
         // ------------------------------------------------------------------
 
         async void UpdateHolidays()
@@ -188,12 +188,12 @@ namespace KKCalendar
                 int lastYear = await HolidayUpdater.DownloadAsync();
                 _book = HolidayBook.Load(Settings.HolidayCsvPath, out _source);
                 _popup?.SetBook(_book);
-                _tray.Notify("KKCalendar", $"祝日数据已更新（内閣府），收录到 {lastYear} 年。");
+                _tray.Notify("KKCalendar", $"祝日データを更新しました（内閣府）。{lastYear} 年まで収録されています。");
             }
             catch (Exception ex)
             {
-                Settings.Log("更新失败: " + ex);
-                _tray.Notify("KKCalendar", "更新失败：" + Describe(ex) + "\n继续使用现有数据。", error: true);
+                Settings.Log("更新失敗: " + ex);
+                _tray.Notify("KKCalendar", "更新に失敗しました：" + Describe(ex) + "\n今のデータをそのまま使います。", error: true);
             }
             finally
             {
@@ -209,16 +209,16 @@ namespace KKCalendar
             while (inner.InnerException != null)
                 inner = inner.InnerException;
             if (ex is System.Net.Http.HttpRequestException || ex is System.Net.WebException)
-                return "连不上内閣府的网站（" + inner.Message + "）";
+                return "内閣府のサイトに接続できません（" + inner.Message + "）";
             if (ex is System.Threading.Tasks.TaskCanceledException)
-                return "连接超时";
+                return "接続がタイムアウトしました";
             if (ex is FormatException)
-                return "下载到的不是祝日 CSV";
+                return "ダウンロードしたファイルが祝日 CSV ではありません";
             return inner.Message;
         }
 
         // ------------------------------------------------------------------
-        // 退出
+        // 終了
         // ------------------------------------------------------------------
 
         void ExitApp()
@@ -233,7 +233,7 @@ namespace KKCalendar
             SystemEvents.TimeChanged -= OnTimeChanged;
             SystemEvents.UserPreferenceChanged -= OnPreferenceChanged;
             SystemEvents.DisplaySettingsChanged -= OnDisplayChanged;
-            _tray?.Dispose();                // 不收掉的话托盘里会留个「幽灵」图标，鼠标划过才消失
+            _tray?.Dispose();                // 片付けないとトレイに「幽霊」アイコンが残り、マウスを乗せるまで消えない
             _showWait?.Unregister(null);
             _exitWait?.Unregister(null);
             _showEvent?.Dispose();

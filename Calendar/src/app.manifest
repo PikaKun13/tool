@@ -17,7 +17,7 @@
     </application>
   </compatibility>
 
-  <!-- 每个显示器各自的 DPI，高分屏上字不糊 -->
+  <!-- ディスプレイごとの DPI に対応し、高 DPI 画面でも文字がぼやけない -->
   <application xmlns="urn:schemas-microsoft-com:asm.v3">
     <windowsSettings>
       <dpiAware xmlns="http://schemas.microsoft.com/SMI/2005/WindowsSettings">true/pm</dpiAware>
@@ -25,7 +25,7 @@
     </windowsSettings>
   </application>
 
-  <!-- Win11 风格的控件和菜单 -->
+  <!-- Win11 スタイルのコントロールとメニュー -->
   <dependency>
     <dependentAssembly>
       <assemblyIdentity type="win32" name="Microsoft.Windows.Common-Controls" version="6.0.0.0"

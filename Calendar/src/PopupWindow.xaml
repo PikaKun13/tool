@@ -14,7 +14,7 @@
     </WindowChrome.WindowChrome>
 
     <Window.Resources>
-        <!-- 扁平按钮：平时透明，悬停时浅浅一层底色 -->
+        <!-- フラットなボタン：ふだんは透明、ホバー時にうっすら背景色 -->
         <Style x:Key="FlatButton" TargetType="Button">
             <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
             <Setter Property="Background" Value="Transparent" />
@@ -56,7 +56,7 @@
                 <TranslateTransform x:Name="BodySlide" />
             </StackPanel.RenderTransform>
 
-            <!-- 今天 -->
+            <!-- 今日 -->
             <StackPanel Margin="20,16,20,14">
                 <TextBlock x:Name="TodayTitle" FontSize="20" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextBrush}" />
@@ -68,7 +68,7 @@
 
             <Border Height="1" Background="{DynamicResource SeparatorBrush}" />
 
-            <!-- 月份导航 -->
+            <!-- 月の移動 -->
             <Grid Margin="19,10,13,2">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock x:Name="MonthTitle" FontSize="15" FontWeight="SemiBold"
@@ -96,7 +96,7 @@
 
             <Border Height="1" Background="{DynamicResource SeparatorBrush}" />
 
-            <!-- 本月的祝日 -->
+            <!-- 今月の祝日 -->
             <Grid x:Name="HolidayList" Margin="20,10,20,14" Height="80" />
         </StackPanel>
     </Border>

@@ -1,9 +1,9 @@
-# 打包产物（18MB 的 exe，别塞进 git 历史；要分发就发 Release）
+# ビルドの生成物（18MB の exe。git の履歴には入れない。配布するなら Release で）
 dist/
 build/
 *.spec
 
-# 运行时生成的个人配置：窗口位置、缩放、历史记录
+# 実行時に作られる個人設定：ウィンドウの位置、拡大率、履歴
 calcbar.json
 
 # Python

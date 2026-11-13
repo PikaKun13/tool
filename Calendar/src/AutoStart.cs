@@ -4,7 +4,7 @@ using System.Reflection;
 
 namespace KKCalendar
 {
-    /// <summary>开机自启：在「启动」文件夹里放一个快捷方式（不写注册表，删掉快捷方式就关了）。</summary>
+    /// <summary>スタートアップ登録：「スタートアップ」フォルダーにショートカットを置く（レジストリは書き換えない。ショートカットを消せば解除）。</summary>
     internal static class AutoStart
     {
         public const string BackgroundArg = "--background";
@@ -14,7 +14,7 @@ namespace KKCalendar
 
         static string ExePath => Assembly.GetEntryAssembly()!.Location;
 
-        /// <summary>快捷方式存在、而且指向的就是当前这个 exe。</summary>
+        /// <summary>ショートカットがあり、しかも今動いているこの exe を指している。</summary>
         public static bool IsEnabled
         {
             get

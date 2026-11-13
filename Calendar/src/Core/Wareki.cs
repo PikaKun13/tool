@@ -2,10 +2,10 @@ using System;
 
 namespace KKCalendar.Core
 {
-    /// <summary>和暦（元号）。只用来显示，不需要 JapaneseCalendar 那套。</summary>
+    /// <summary>和暦（元号）。表示に使うだけなので、JapaneseCalendar 一式は使わない。</summary>
     public static class Wareki
     {
-        // (改元日, 元号, 元年对应的公历年)。日历只显示 1900 年以后，明治的起点粗略即可
+        // (改元日, 元号, 元年にあたる西暦年)。カレンダーは 1900 年以降しか表示しないので、明治の起点はおおまかでよい
         static readonly (DateTime Start, string Name, int FirstYear)[] Eras =
         {
             (new DateTime(2019, 5, 1), "令和", 2019),
@@ -15,7 +15,7 @@ namespace KKCalendar.Core
             (new DateTime(1868, 1, 1), "明治", 1868),
         };
 
-        /// <summary>例如 2026-11-13 →「令和8年」，2019-05-01 →「令和元年」。</summary>
+        /// <summary>例：2026-11-13 →「令和8年」、2019-05-01 →「令和元年」。</summary>
         public static string? Format(DateTime date)
         {
             foreach (var era in Eras)

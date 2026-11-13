@@ -7,7 +7,7 @@ using System.IO;
 
 namespace KKCalendar
 {
-    /// <summary>托盘图标：一页小日历，上面写今天几号。按托盘图标的实际像素尺寸现画，不缩放。</summary>
+    /// <summary>トレイアイコン：今日の日付を書いた小さな日めくり。トレイアイコンの実際のピクセルサイズでその場で描き、拡大縮小はしない。</summary>
     internal static class TrayIconPainter
     {
         public static Bitmap Render(int day, int size, bool lightTaskbar, bool holiday)
@@ -28,7 +28,7 @@ namespace KKCalendar
                 var page = new RectangleF(inset, s * 0.08f + inset, s - stroke, s * 0.92f - stroke);
                 float radius = Math.Max(2f, s * 0.16f);
 
-                // 页眉：一条实心的顶边，像撕页日历
+                // ヘッダー：上端をベタ塗りの帯にして、日めくりカレンダー風に
                 float headerH = Math.Max(2f, (float)Math.Round(s * 0.2f));
                 using (var path = Rounded(new RectangleF(page.X, page.Y, page.Width, headerH + radius), radius))
                 using (var brush = new SolidBrush(holiday ? red : ink))
@@ -42,7 +42,7 @@ namespace KKCalendar
                 using (var pen = new Pen(ink, stroke))
                     g.DrawPath(pen, path);
 
-                // 日期数字：在页眉下面的区域里居中，尽量大
+                // 日付の数字：ヘッダーの下の領域の中央に、できるだけ大きく
                 var area = new RectangleF(page.X + stroke, page.Y + headerH, page.Width - stroke * 2,
                                           page.Bottom - page.Y - headerH - stroke);
                 DrawNumber(g, day.ToString(), area, holiday ? red : ink);
@@ -55,7 +55,7 @@ namespace KKCalendar
             using (var family = PickFamily())
             using (var path = new GraphicsPath())
             {
-                // 先用 100 的字号排出轮廓，再按实际可用空间缩放：数字紧贴区域，不受字体行距影响
+                // まずフォントサイズ 100 でアウトラインを作り、実際に使える領域に合わせて拡大縮小する：数字を領域いっぱいに収め、フォントの行間に左右されない
                 path.AddString(text, family, (int)FontStyle.Bold, 100f, PointF.Empty, StringFormat.GenericTypographic);
                 var bounds = path.GetBounds();
                 float scale = Math.Min(area.Width * 0.92f / bounds.Width, area.Height * 0.78f / bounds.Height);
@@ -94,8 +94,8 @@ namespace KKCalendar
         }
 
         /// <summary>
-        /// 把 32 位 ARGB 位图包成 .ico 再交给 Icon，保证半透明边缘不丢
-        /// （Bitmap.GetHicon 会把 alpha 弄坏）。
+        /// 32 ビット ARGB のビットマップを .ico に包んでから Icon に渡し、半透明の縁が失われないようにする
+        /// （Bitmap.GetHicon は alpha を壊す）。
         /// </summary>
         public static Icon ToIcon(Bitmap bitmap)
         {
@@ -120,7 +120,7 @@ namespace KKCalendar
                 writer.Write((short)32);
                 writer.Write(imageBytes);
                 writer.Write(6 + 16);
-                // BITMAPINFOHEADER（高度要写两倍：颜色 + 掩码）
+                // BITMAPINFOHEADER（高さは 2 倍で書く：色 + マスク）
                 writer.Write(40);
                 writer.Write(w);
                 writer.Write(h * 2);
@@ -137,7 +137,7 @@ namespace KKCalendar
                 try
                 {
                     var row = new byte[w * 4];
-                    for (int y = h - 1; y >= 0; y--)          // 自下而上
+                    for (int y = h - 1; y >= 0; y--)          // 下から上へ
                     {
                         System.Runtime.InteropServices.Marshal.Copy(data.Scan0 + y * data.Stride, row, 0, row.Length);
                         writer.Write(row);
@@ -147,7 +147,7 @@ namespace KKCalendar
                 {
                     bitmap.UnlockBits(data);
                 }
-                writer.Write(new byte[maskStride * h]);       // 全 0：完全靠 alpha
+                writer.Write(new byte[maskStride * h]);       // すべて 0：alpha だけで透過させる
                 writer.Flush();
                 stream.Position = 0;
                 return new Icon(stream, w, h);

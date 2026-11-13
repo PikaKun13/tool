@@ -7,7 +7,7 @@ using KKCalendar.Core;
 
 namespace KKCalendar
 {
-    /// <summary>「更新日历」：重新下载内閣府的祝日 CSV。</summary>
+    /// <summary>「祝日データを更新」：内閣府の祝日 CSV をダウンロードし直す。</summary>
     internal static class HolidayUpdater
     {
         public static async Task<int> DownloadAsync()
@@ -20,7 +20,7 @@ namespace KKCalendar
                 data = await client.GetByteArrayAsync(HolidayBook.OfficialUrl).ConfigureAwait(false);
             }
 
-            // 先解析一遍，确认是像样的数据再落盘
+            // 保存する前に一度解析して、まともなデータであることを確かめる
             var parsed = HolidayBook.ParseCsv(data);
             string target = Settings.HolidayCsvPath;
             string temp = target + ".download";

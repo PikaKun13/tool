@@ -1,4 +1,4 @@
-"""求值器的行为约定。用 unittest，跑起来不需要装任何东西。"""
+"""評価器のふるまいの約束事。unittest を使うので、実行に何もインストールしなくてよい。"""
 
 import math
 import sys
@@ -13,7 +13,7 @@ from calcbar.evaluator import (  # noqa: E402
 
 
 class PythonSemanticsTest(unittest.TestCase):
-    """算式按 Python 写。"""
+    """式は Python の書き方。"""
 
     def setUp(self):
         self.ev = Evaluator()
@@ -80,15 +80,15 @@ class PythonSemanticsTest(unittest.TestCase):
         self.assertEqual(self.calc("1_000*2").display, "2000")
 
     def test_j_is_the_imaginary_unit_in_any_position(self):
-        self.assertEqual(self.calc("3+4j").display, "(3+4j)")   # Python 的字面量
-        self.assertEqual(self.calc("j").display, "1j")          # 面板按钮单独插进来
+        self.assertEqual(self.calc("3+4j").display, "(3+4j)")   # Python のリテラル
+        self.assertEqual(self.calc("j").display, "1j")          # パネルのボタンが単体で挿入する
         self.assertEqual(self.calc("j*j").display, "(-1+0j)")
         self.assertEqual(self.calc("2+j").display, "(2+1j)")
         self.assertEqual(self.calc("abs(3+4j)").display, "5.0")
 
 
 class SymbolInputTest(unittest.TestCase):
-    """不好输入的符号可以直接打进去。"""
+    """入力しにくい記号もそのまま入力できる。"""
 
     def setUp(self):
         self.ev = Evaluator()
@@ -100,7 +100,7 @@ class SymbolInputTest(unittest.TestCase):
 
     def test_normalize_constants(self):
         self.assertEqual(normalize("π"), "pi")
-        self.assertEqual(normalize("2π"), "2pi")   # 语法仍按 Python，需自己写 *
+        self.assertEqual(normalize("2π"), "2pi")   # 文法はあくまで Python なので、* は自分で書く
 
     def test_normalize_roots(self):
         self.assertEqual(normalize("√9"), "sqrt(9)")
@@ -140,11 +140,11 @@ class ParenBalancingTest(unittest.TestCase):
         self.assertEqual(Evaluator().evaluate("sqrt(16").display, "4.0")
 
     def test_extra_closer_reports_error(self):
-        self.assertEqual(Evaluator().evaluate("1+2)").error, "右括号多了")
+        self.assertEqual(Evaluator().evaluate("1+2)").error, "閉じ括弧が多すぎます")
 
 
 class PartialInputTest(unittest.TestCase):
-    """边打边算：没打完的算式不该弹错误。"""
+    """入力しながら計算：書きかけの式でエラーを出さない。"""
 
     def setUp(self):
         self.ev = Evaluator()
@@ -164,7 +164,7 @@ class PartialInputTest(unittest.TestCase):
         self.assertEqual(self.ev.evaluate("tanh").display, "")
 
     def test_empty_call_is_waiting_for_arguments_not_broken(self):
-        """点面板上的 sqrt() 按钮时，光标正停在括号里——别弹红字。"""
+        """パネルの sqrt() ボタンを押した直後はカーソルが括弧の中にある——赤字を出さない。"""
         for expr in ("sqrt()", "log()", "atan2()", "min()", "factorial()", "1+sqrt()"):
             with self.subTest(expr=expr):
                 result = self.ev.evaluate(expr)
@@ -173,7 +173,7 @@ class PartialInputTest(unittest.TestCase):
                 self.assertEqual(result.display, "")
 
     def test_half_typed_name_is_not_yet_a_mistake(self):
-        """手打 sqrt 的路上会经过 s / sq / sqr，一路飘红太吓人。"""
+        """sqrt と手で打つ途中で s / sq / sqr を経由する。そのたびに赤字が出たら驚く。"""
         for expr in ("s", "sq", "sqr", "xyz"):
             with self.subTest(expr=expr):
                 result = self.ev.evaluate(expr)
@@ -190,10 +190,10 @@ class ErrorTest(unittest.TestCase):
         self.ev = Evaluator()
 
     def test_division_by_zero(self):
-        self.assertEqual(self.ev.evaluate("1/0").error, "除数不能为 0")
+        self.assertEqual(self.ev.evaluate("1/0").error, "0 で割ることはできません")
 
     def test_domain_error(self):
-        self.assertEqual(self.ev.evaluate("log(-1)").error, "超出函数定义域")
+        self.assertEqual(self.ev.evaluate("log(-1)").error, "関数の定義域の外です")
 
     def test_unknown_name(self):
         self.assertIn("nosuch", self.ev.evaluate("nosuch(2)").error)
@@ -203,7 +203,7 @@ class ErrorTest(unittest.TestCase):
 
 
 class SafetyTest(unittest.TestCase):
-    """只算数，不执行任意代码。"""
+    """計算だけして、任意のコードは実行しない。"""
 
     def setUp(self):
         self.ev = Evaluator()
@@ -254,20 +254,20 @@ class VariablesTest(unittest.TestCase):
         self.ev.evaluate("q = 3")
         self.assertEqual(self.ev.evaluate("q").display, "3")
         self.ev.reset()
-        # 没定义的光杆名字算「还没打完」（见 still_typing），所以是没值、而非报错
+        # 定義されていない名前が単独であるのは「書きかけ」扱い（still_typing を参照）なので、エラーではなく値なし
         result = self.ev.evaluate("q")
         self.assertFalse(result.ok)
         self.assertEqual(result.display, "")
 
 
 class ScriptTest(unittest.TestCase):
-    """多行模式：逐行算、共用一个命名空间，show 决定哪些行把结果亮出来。"""
+    """複数行モード：1 行ずつ計算し、名前空間を共有する。どの行の結果を見せるかは show で決める。"""
 
     def setUp(self):
         self.ev = Evaluator()
 
     def shown(self, text):
-        """只取要显示的行，返回 [(算式, 显示文本)]。"""
+        """表示する行だけを取り出し、[(式, 表示テキスト)] を返す。"""
         return [(line.source, line.result.display)
                 for line in self.ev.evaluate_script(text) if line.shown]
 
@@ -300,23 +300,23 @@ class ScriptTest(unittest.TestCase):
 
     def test_a_broken_line_does_not_stop_the_rest(self):
         out = self.ev.evaluate_script("a = 1\n1/0\nshow a+1")
-        self.assertEqual(out[1].result.error, "除数不能为 0")
+        self.assertEqual(out[1].result.error, "0 で割ることはできません")
         self.assertEqual(out[2].result.display, "2")
 
     def test_a_failing_line_is_never_silent(self):
-        """没写 show 也得把错说出来——出错还闷着才是最坑的。"""
+        """show がなくてもエラーは知らせる——エラーなのに黙っているのがいちばん困る。"""
         out = self.ev.evaluate_script("a = 1\nnosuch(2)\na+1")
         self.assertTrue(out[1].shown)
         self.assertIn("nosuch", out[1].result.error)
 
     def test_a_half_typed_line_stays_quiet(self):
-        """但「还没打完」不算错，边打边算时不该一路飘红。"""
+        """ただし「書きかけ」はエラーではない。入力中に赤字がちらついてはいけない。"""
         out = self.ev.evaluate_script("a = 1\n2+\nsqr\na+1")
         self.assertFalse(out[1].shown)
         self.assertFalse(out[2].shown)
 
     def test_show_also_accepts_the_call_form(self):
-        """面板上所有东西都长成 func()，用户会本能地写 show(x)。"""
+        """パネルのものはすべて func() の形なので、ユーザーはつい show(x) と書く。"""
         self.assertEqual(self.shown("a = 3\nb = a**2\nshow(b)\nb+1"),
                          [("(b)", "9"), ("b+1", "10")])
 
@@ -333,7 +333,7 @@ class ScriptTest(unittest.TestCase):
 
 
 class StripShowTest(unittest.TestCase):
-    """show 是行首关键字，但不能把它变成保留字——用户拿它当变量名也得让路。"""
+    """show は行頭のキーワードだが、予約語にしてはいけない——変数名として使われたらそちらを優先する。"""
 
     def test_show_prefix_is_stripped(self):
         self.assertEqual(strip_show("show x"), ("x", True))
@@ -341,7 +341,7 @@ class StripShowTest(unittest.TestCase):
         self.assertEqual(strip_show("  show  sqrt(2)"), ("sqrt(2)", True))
 
     def test_the_call_form_works_too(self):
-        # 括号原样留着就行——(b) 求值等于 b
+        # 括弧はそのまま残せばよい——(b) を評価すれば b と同じ
         self.assertEqual(strip_show("show(b)"), ("(b)", True))
         self.assertEqual(strip_show("show (b)"), ("(b)", True))
         self.assertEqual(strip_show("show(a*2+1)"), ("(a*2+1)", True))
@@ -356,7 +356,7 @@ class StripShowTest(unittest.TestCase):
         self.assertEqual(strip_show("show += 1"), ("show += 1", False))
         self.assertEqual(strip_show("show"), ("show", False))
         self.assertEqual(strip_show("show * 2"), ("show * 2", False))
-        # 减号最阴险：'- 1' 单独看是合法表达式，但这里显然是「show 减一」
+        # マイナスがいちばん厄介：'- 1' 単体なら正しい式だが、ここは明らかに「show から 1 を引く」
         self.assertEqual(strip_show("show - 1"), ("show - 1", False))
         self.assertEqual(strip_show("show ** 2"), ("show ** 2", False))
 

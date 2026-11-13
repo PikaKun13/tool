@@ -1,7 +1,7 @@
-"""CalcBar 的界面：一条 Spotlight 风格的算式输入条。
+"""CalcBar の画面：Spotlight 風の式入力バー。
 
-布局全部用 ``place`` 手工摆，因为要做到「结果紧跟在算式后面」这种效果：
-输入框的宽度实时等于文字宽度，灰色的 ``= 结果`` 就贴在它右边。
+レイアウトはすべて ``place`` で手作業で配置する。「結果が式のすぐ後ろに続く」見た目にするため：
+入力欄の幅を常に文字の幅と同じにし、グレーの ``= 結果`` をそのすぐ右に置く。
 """
 
 from __future__ import annotations
@@ -22,17 +22,17 @@ from .theme import DARK, LIGHT, METRICS
 _LATIN_FAMILIES = ("Segoe UI Variable Display", "Segoe UI", "Tahoma")
 _CJK_FAMILIES = ("Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI")
 _HISTORY_LIMIT = 60
-_MULTI_HISTORY_LIMIT = 20      # 多行历史存的是整块草稿，条数少一点
+_MULTI_HISTORY_LIMIT = 20      # 複数行の履歴は下書きのブロック全体を保存するので、件数は少なめ
 
-# Ctrl+滚轮的整体缩放倍率
+# Ctrl+ホイールによる全体の拡大率
 _ZOOM_MIN, _ZOOM_MAX, _ZOOM_STEP = 0.7, 2.0, 0.1
 
-# 多行模式最多显示这么多行，再多就在输入框里滚动
+# 複数行モードで表示する最大行数。それより多ければ入力欄の中でスクロールする
 _MAX_VISIBLE_LINES = 12
 
 
 def _app_dir() -> Path:
-    """绿色版：配置就放在程序旁边，不往系统里写东西。"""
+    """ポータブル版：設定はプログラムの横に置き、システムには何も書き込まない。"""
     if getattr(sys, "frozen", False):
         return Path(sys.executable).resolve().parent
     return Path(__file__).resolve().parents[1]
@@ -47,7 +47,7 @@ class CalcBar:
         self.root.overrideredirect(True)
         self.root.title("CalcBar")
 
-        self.hwnd = 0            # 窗口真正映射之后才有效，见 _finish_window
+        self.hwnd = 0            # ウィンドウが実際にマップされてから有効になる。_finish_window を参照
         self.scale = winapi.cursor_dpi_scale()
         self.palette = DARK if winapi.prefers_dark() else LIGHT
         self.metrics = METRICS
@@ -61,23 +61,23 @@ class CalcBar:
         self._flash_color = self.palette.muted
         self._drag_origin: tuple[int, int] | None = None
         self._resize_origin: tuple[int, int, int, int] | None = None
-        self.win_x = self.win_y = 0        # 真正的位置在 _place_window 里定
+        self.win_x = self.win_y = 0        # 実際の位置は _place_window で決める
 
         self.config = self._load_config()
         self.history: list[str] = list(self.config.get("history", []))
         self.history_multi: list[str] = list(self.config.get("history_multi", []))
         self.history_index = len(self.history)
         self.panel_open = bool(self.config.get("panel_open", False))
-        # 单行 / 多行各留各的草稿：切过去是空白的，切回来还在
+        # 1 行 / 複数行はそれぞれ別の下書きを持つ：切り替えた先は空で、戻ると残っている
         self.multiline = bool(self.config.get("multiline", False))
         self._drafts = {False: "", True: ""}
-        self.script: list[LineResult] = []       # 多行模式下每行的结果
+        self.script: list[LineResult] = []       # 複数行モードでの各行の結果
         self._line_labels: list[tk.Label] = []
-        # 结果列的排版，滚动时照着重贴，见 _place_result_labels
+        # 結果列のレイアウト。スクロール時はこれを元に貼り直す。_place_result_labels を参照
         self._result_rows: list[list] = []
         self._result_col = self._result_room = self._result_pad_y = 0
         self._scroll_pending = False
-        # 尺寸两个自由度：zoom 管字大小，bar_width 管一行能装多少字
+        # サイズの自由度は 2 つ：zoom は文字の大きさ、bar_width は 1 行に入る文字数を決める
         self.zoom = self._clamp_zoom(self.config.get("zoom", 1.0))
         self.bar_width = self._clamp_width(self.config.get("width", METRICS.bar_width))
 
@@ -95,22 +95,22 @@ class CalcBar:
         self._on_change()
 
     def _finish_window(self) -> None:
-        """窗口映射之后才能拿到最终 HWND，再让 DWM 画圆角、抢焦点。"""
+        """ウィンドウがマップされて初めて最終的な HWND が取れるので、そこで DWM に角丸を描かせ、フォーカスを取る。"""
         self.root.update()
         self.hwnd = winapi.toplevel_hwnd(self.root)
         winapi.round_corners(self.hwnd)
         winapi.focus_window(self.hwnd)
 
     # ------------------------------------------------------------------
-    # 基础设施
+    # 基盤
     # ------------------------------------------------------------------
     def px(self, logical: float) -> int:
-        """逻辑像素 -> 当前显示器的物理像素（显示器 DPI × 用户缩放）。"""
+        """論理ピクセル -> 現在のディスプレイの物理ピクセル（ディスプレイの DPI × ユーザーの拡大率）。"""
         return int(round(logical * self.scale * self.zoom))
 
     @property
     def width_px(self) -> int:
-        """窗口当前的物理宽度。摆位置一律用它，不要再用 metrics.bar_width。"""
+        """ウィンドウの現在の物理幅。配置には必ずこれを使い、metrics.bar_width は使わない。"""
         return self.px(self.bar_width)
 
     def _clamp_zoom(self, value) -> float:
@@ -121,7 +121,7 @@ class CalcBar:
         return min(_ZOOM_MAX, max(_ZOOM_MIN, value))
 
     def _clamp_width(self, logical) -> int:
-        """逻辑宽度夹在 [最小宽, 显示器工作区宽] 之间。"""
+        """論理幅を [最小幅, ディスプレイの作業領域の幅] の範囲に収める。"""
         try:
             logical = float(logical)
         except (TypeError, ValueError):
@@ -149,9 +149,9 @@ class CalcBar:
         self._font("font_placeholder", cjk, m.font_result)
 
     def _font(self, attr: str, family: str, size: int) -> None:
-        """建字体；已经有了就只改字号——缩放时会反复调到这里。
+        """フォントを作る。すでにあればサイズだけ変える——拡大縮小のたびに何度も呼ばれる。
 
-        负数字号 = 直接按像素，不受 tk 自己那套 DPI 换算影响。
+        負のフォントサイズ = ピクセル指定。tk 独自の DPI 換算の影響を受けない。
         """
         existing = getattr(self, attr, None)
         if existing is None:
@@ -182,13 +182,13 @@ class CalcBar:
             with open(_app_dir() / "calcbar.json", "w", encoding="utf-8") as handle:
                 json.dump(data, handle, ensure_ascii=False, indent=1)
         except OSError:
-            pass                                   # 只读目录也照样能用
+            pass                                   # 読み取り専用のフォルダーでもそのまま使える
 
     # ------------------------------------------------------------------
-    # 界面搭建
+    # 画面の構築
     # ------------------------------------------------------------------
     def _build(self) -> None:
-        """从零搭出整个界面。缩放时会整个重来一遍，所以必须可重入。"""
+        """画面全体を一から組み立てる。拡大縮小のたびに丸ごとやり直すので、再入可能でなければならない。"""
         p, m = self.palette, self.metrics
         self.root.configure(bg=p.bg)
 
@@ -237,18 +237,18 @@ class CalcBar:
             selectbackground=p.select_bg, selectforeground=p.select_fg,
             insertwidth=max(1, self.px(2)),
         )
-        self.entry = self.box.widget          # 摆位置和绑事件时用得着
+        self.entry = self.box.widget          # 配置やイベントの割り当てで使う
 
         flat = dict(bd=0, padx=0, pady=0, highlightthickness=0, anchor="w")
         self.placeholder = tk.Label(
             self.bar, bg=p.bg, fg=p.placeholder, font=self.font_placeholder,
-            text=("每行一步，行首写 show 显示中间结果" if self.multiline
-                  else "输入算式，比如  2**3  或  tanh(2)"),
+            text=("1 行に 1 ステップ。行頭に show と書くと途中結果を表示" if self.multiline
+                  else "式を入力（例： 2**3  や  tanh(2)）"),
             **flat)
         self.result = tk.Label(self.bar, text="", bg=p.bg, fg=p.muted,
                                font=self.font_result, **flat)
-        # 多行模式下每个显示行配一个结果标签，够用就行，多的藏起来。
-        # 多备一个：滚轮是按像素滚的，顶上和底下会各露半行，那半行也得有结果。
+        # 複数行モードでは表示行ごとに結果ラベルを 1 つ用意する。足りればよく、余りは隠す。
+        # 1 つ余分に用意する：ホイールはピクセル単位でスクロールするので上下に半行ずつ見えることがあり、その半行にも結果が要る。
         self._line_labels = [
             tk.Label(self.bar, text="", bg=p.bg, fg=p.muted,
                      font=self.font_result, **flat)
@@ -282,16 +282,16 @@ class CalcBar:
         self._place_button()
 
     def _place_button(self) -> None:
-        """按钮永远贴着右边缘——窗口一变宽就得重摆。"""
+        """ボタンは常に右端に置く——ウィンドウの幅が変わったら置き直す。"""
         m = self.metrics
         size = self.px(m.button_size)
         self.button.place(x=self.width_px - self.px(m.button_margin) - size,
                           y=(self.px(m.bar_height) - size) // 2,
                           width=size, height=size)
 
-    # -- 符号面板 --------------------------------------------------------
+    # -- 記号パネル --------------------------------------------------------
     def _build_panel(self) -> None:
-        """只负责造控件；摆在哪儿由 _layout_panel 按当前宽度决定。"""
+        """ウィジェットを作るだけ。どこに置くかは _layout_panel が現在の幅に合わせて決める。"""
         p, m = self.palette, self.metrics
         self.panel = tk.Frame(self.outer, bg=p.bg)
         self._chip_images: dict[tuple[int, int, str], tk.PhotoImage] = {}
@@ -319,7 +319,7 @@ class CalcBar:
         self._layout_panel()
 
     def _layout_panel(self) -> None:
-        """按当前窗口宽度重排面板：装不下的 chip 换行，顺带算出 panel_height。"""
+        """現在のウィンドウ幅に合わせてパネルを並べ直す：入りきらない chip は折り返し、ついでに panel_height を求める。"""
         m = self.metrics
         pad_x = self.px(m.panel_pad_x)
         avail = max(self.px(60), self.width_px - pad_x * 2)
@@ -346,11 +346,11 @@ class CalcBar:
         self.panel_height = y + self.font_hint.metrics("linespace") + self.px(m.panel_pad_y)
 
     def _hint_default(self) -> str:
-        """没悬停在任何按钮上时，底部显示的那行快捷键——两种模式不一样。"""
+        """どのボタンにもマウスが乗っていないときに下部に出すショートカットの行——モードによって違う。"""
         return HINT_MULTI if self.multiline else HINT
 
     def _set_hint(self, text: str) -> None:
-        """面板底部那行字。窗口拖窄之后要截断，免得糊到窗口外面去。"""
+        """パネル下部の 1 行。ウィンドウを狭くしたら切り詰めて、ウィンドウの外にはみ出さないようにする。"""
         self._hint_text = text
         room = self.width_px - self.px(self.metrics.panel_pad_x) * 2
         self.hint.configure(text=self._fit(text, self.font_hint, room))
@@ -389,19 +389,19 @@ class CalcBar:
         return chip
 
     # ------------------------------------------------------------------
-    # 事件绑定
+    # イベントの割り当て
     # ------------------------------------------------------------------
     def _bind_widgets(self) -> None:
-        """挂在控件上的事件。缩放会重建控件，所以这些要跟着重挂。"""
+        """ウィジェットに付けるイベント。拡大縮小でウィジェットを作り直すので、これも付け直す。"""
         self.entry.bind("<Escape>", lambda _: (self.escape(), "break")[1])
         self.entry.bind("<Control-a>", self._select_all)
         self.entry.bind("<Control-c>", self._copy)
-        # Text 类绑定里 Ctrl+K 是「删到行尾」，得在控件这一层拦掉
+        # Text のクラスバインディングでは Ctrl+K が「行末まで削除」なので、ウィジェットの層で止める
         self.entry.bind("<Control-k>", lambda _: (self.toggle_panel(), "break")[1])
         self.entry.bind("<Control-m>", lambda _: self.toggle_multiline())
         if self.multiline:
-            # Enter 换行交给 Text 自己，复制让位给 Ctrl+Enter；
-            # ↑↓ 得留给光标移动，翻历史挪到 Ctrl+↑↓
+            # Enter の改行は Text 自身に任せ、コピーは Ctrl+Enter に譲る。
+            # ↑↓ はカーソル移動に残し、履歴は Ctrl+↑↓ に移す
             self.entry.bind("<Control-Return>", lambda _: self.commit())
             self.entry.bind("<Control-KP_Enter>", lambda _: self.commit())
             self.entry.bind("<Control-Up>", lambda _: self.recall(-1))
@@ -415,7 +415,7 @@ class CalcBar:
         for widget in (self.icon, self.placeholder, self.result):
             widget.bind("<Button-1>", self._start_drag)
             widget.bind("<B1-Motion>", self._on_drag)
-        # bar 和 panel 是铺满整宽的，左右边缘那两条要让给拉伸
+        # bar と panel は全幅に広がっているので、左右の端の帯はリサイズ用に譲る
         for widget in (self.bar, self.panel):
             widget.bind("<Motion>", self._hover_edge)
             widget.bind("<Leave>", lambda _, w=widget: w.configure(cursor=""))
@@ -427,7 +427,7 @@ class CalcBar:
             widget.bind("<Button-3>", self._popup_menu)
 
     def _bind_global(self) -> None:
-        """挂在 root 上的快捷键和右键菜单，整个进程只挂一次。"""
+        """root に付けるショートカットと右クリックメニュー。プロセス全体で一度だけ付ける。"""
         self.root.bind("<Control-k>", lambda _: self.toggle_panel())
         self.root.bind("<Escape>", lambda _: self.escape())
         self.root.bind("<Control-MouseWheel>",
@@ -440,24 +440,24 @@ class CalcBar:
 
         self.multiline_var = tk.BooleanVar(master=self.root, value=self.multiline)
         self._menu = tk.Menu(self.root, tearoff=0)
-        self._menu.add_command(label="复制结果　Enter", command=self.commit)
-        self._menu.add_command(label="清空", command=lambda: self.set_text(""))
-        self._menu.add_command(label="符号面板　Ctrl+K", command=self.toggle_panel)
-        self._menu.add_command(label="恢复默认大小　Ctrl+0", command=self.reset_size)
+        self._menu.add_command(label="結果をコピー　Enter", command=self.commit)
+        self._menu.add_command(label="クリア", command=lambda: self.set_text(""))
+        self._menu.add_command(label="記号パネル　Ctrl+K", command=self.toggle_panel)
+        self._menu.add_command(label="既定のサイズに戻す　Ctrl+0", command=self.reset_size)
         self._menu.add_separator()
-        self._menu.add_checkbutton(label="多行模式　Ctrl+M", variable=self.multiline_var,
+        self._menu.add_checkbutton(label="複数行モード　Ctrl+M", variable=self.multiline_var,
                                    command=self.toggle_multiline)
-        self._menu.add_checkbutton(label="总在最前", variable=self.topmost,
+        self._menu.add_checkbutton(label="常に手前に表示", variable=self.topmost,
                                    command=self._apply_topmost)
-        self._menu.add_command(label="清除自定义变量", command=self._reset_vars)
+        self._menu.add_command(label="カスタム変数をクリア", command=self._reset_vars)
         self._menu.add_separator()
-        self._menu.add_command(label="退出　Esc", command=self.quit)
+        self._menu.add_command(label="終了　Esc", command=self.quit)
 
     def _popup_menu(self, event) -> None:
-        self._menu.entryconfigure(0, label="复制结果　Ctrl+Enter" if self.multiline
-                                  else "复制结果　Enter")
-        self._menu.entryconfigure(2, label="收起面板　Ctrl+K" if self.panel_open
-                                  else "符号面板　Ctrl+K")
+        self._menu.entryconfigure(0, label="結果をコピー　Ctrl+Enter" if self.multiline
+                                  else "結果をコピー　Enter")
+        self._menu.entryconfigure(2, label="パネルを閉じる　Ctrl+K" if self.panel_open
+                                  else "記号パネル　Ctrl+K")
         try:
             self._menu.tk_popup(event.x_root, event.y_root)
         finally:
@@ -488,9 +488,9 @@ class CalcBar:
     def _reset_vars(self) -> None:
         self.evaluator.reset()
         self._on_change()
-        self._flash("已清除自定义变量")
+        self._flash("カスタム変数をクリアしました")
 
-    # -- 拖动 -----------------------------------------------------------
+    # -- ドラッグで移動 -----------------------------------------------------------
     def _start_drag(self, event) -> None:
         self._drag_origin = (event.x_root - self.win_x, event.y_root - self.win_y)
 
@@ -501,9 +501,9 @@ class CalcBar:
         self.win_y = event.y_root - self._drag_origin[1]
         self._apply_geometry()
 
-    # -- 拉伸宽度 --------------------------------------------------------
+    # -- 幅のリサイズ --------------------------------------------------------
     def _edge_at(self, x_root: int) -> int:
-        """鼠标压在窗口左/右边缘上就返回 -1 / +1，在中间返回 0。"""
+        """マウスがウィンドウの左 / 右の端にあれば -1 / +1、中ほどなら 0 を返す。"""
         offset = x_root - self.win_x
         edge = max(3, self.px(self.metrics.resize_edge))
         if offset < edge:
@@ -513,7 +513,7 @@ class CalcBar:
         return 0
 
     def _hover_edge(self, event) -> None:
-        """边缘上把光标换成 ↔，这是「这里能拉」的唯一提示。"""
+        """端ではカーソルを ↔ にする。「ここを引っ張れる」という唯一の手がかり。"""
         event.widget.configure(
             cursor="sb_h_double_arrow" if self._edge_at(event.x_root) else "")
 
@@ -531,7 +531,7 @@ class CalcBar:
         side, x0, width0, win_x0 = self._resize_origin
         unit = self.scale * self.zoom
         self.bar_width = self._clamp_width(width0 + (event.x_root - x0) / unit * side)
-        if side < 0:                      # 拖左边缘时右边界钉住不动
+        if side < 0:                      # 左端をドラッグするときは右端を固定する
             self.win_x = win_x0 + int(round((width0 - self.bar_width) * unit))
         self._resize_layout()
 
@@ -540,13 +540,13 @@ class CalcBar:
         self._drag_origin = None
 
     def _resize_layout(self) -> None:
-        """宽度变了：重摆按钮和面板即可，一个控件都不用重建。"""
+        """幅が変わった：ボタンとパネルを置き直せば済み、ウィジェットは 1 つも作り直さない。"""
         self._place_button()
         self._layout_panel()
         self._relayout()
         self._apply_geometry()
 
-    # -- 整体缩放 --------------------------------------------------------
+    # -- 全体の拡大縮小 --------------------------------------------------------
     def zoom_by(self, steps: int) -> str:
         target = self._clamp_zoom(self.zoom + _ZOOM_STEP * steps)
         if target != self.zoom:
@@ -554,17 +554,17 @@ class CalcBar:
         return "break"
 
     def reset_size(self) -> str:
-        """宽度和倍率都回出厂值——设置是存盘的，得留个逃生口。"""
+        """幅と倍率をどちらも初期値に戻す——設定は保存されるので、逃げ道を用意しておく。"""
         self.bar_width = self._clamp_width(self.metrics.bar_width)
         if self.zoom != 1.0:
             self._apply_zoom(1.0)
         else:
             self._resize_layout()
-        self._flash("已恢复默认大小")
+        self._flash("既定のサイズに戻しました")
         return "break"
 
     def _apply_zoom(self, zoom: float) -> None:
-        """倍率一变，字号和图标的像素尺寸全得重算，只能整个界面重建一次。"""
+        """倍率が変わるとフォントサイズとアイコンのピクセルサイズをすべて計算し直す必要があり、画面全体を一度作り直すしかない。"""
         text, caret = self.box.text(), self.box.caret()
         self.zoom = zoom
         self.bar_width = self._clamp_width(self.bar_width)
@@ -576,7 +576,7 @@ class CalcBar:
         self._apply_geometry()
 
     # ------------------------------------------------------------------
-    # 窗口位置与大小
+    # ウィンドウの位置と大きさ
     # ------------------------------------------------------------------
     def _place_window(self) -> None:
         width = self.width_px
@@ -587,7 +587,7 @@ class CalcBar:
         if not isinstance(self.win_x, int) or not isinstance(self.win_y, int):
             self.win_x = area_x + (area_w - width) // 2
             self.win_y = area_y + int(area_h * 0.22)
-        # 上次的显示器可能已经拔了，拉回可见区域
+        # 前回のディスプレイはもう外されているかもしれないので、見える範囲に引き戻す
         self.win_x = max(area_x, min(self.win_x, area_x + area_w - width))
         self.win_y = max(area_y, min(self.win_y, area_y + area_h - self.px(80)))
         self._apply_geometry()
@@ -609,7 +609,7 @@ class CalcBar:
         self.box.focus()
 
     # ------------------------------------------------------------------
-    # 输入 -> 计算 -> 排版
+    # 入力 -> 計算 -> レイアウト
     # ------------------------------------------------------------------
     def insert(self, text: str, caret_back: int = 0) -> None:
         self.box.insert(text, caret_back)
@@ -622,7 +622,7 @@ class CalcBar:
         return self.box.text()
 
     def _sanitize(self, text: str) -> str:
-        """控制字符直接扔掉。单行模式下换行也压成空格，多行模式下留着。"""
+        """制御文字は捨てる。1 行モードでは改行も空白にし、複数行モードでは残す。"""
         out = []
         for ch in text:
             if ch == "\n" and self.multiline:
@@ -635,10 +635,10 @@ class CalcBar:
 
     def _describe(self, result: EvalResult, source: str,
                   bare: bool = False) -> tuple[str, str]:
-        """一次求值 -> (显示什么字, 什么颜色)。单行和多行共用这套判断。
+        """1 回の評価 -> (表示する文字, 色)。1 行と複数行でこの判定を共有する。
 
-        ``bare`` 给多行用：赋值行只显示值，因为变量名就在同一行左边摆着，
-        再写成「= v = 282.7」纯属重复。
+        ``bare`` は複数行用：代入の行は値だけを表示する。変数名は同じ行の左側に書いてあるので、
+        「= v = 282.7」と書くのはただの重複になる。
         """
         p = self.palette
         if not source.strip():
@@ -658,7 +658,7 @@ class CalcBar:
         raw = self.box.text()
         text = self._sanitize(raw)
         if text != raw:
-            self.box.set_text(text, notify=False)   # 别再绕回自己
+            self.box.set_text(text, notify=False)   # 自分に戻ってこないように
 
         if self.multiline:
             self.script = self.evaluator.evaluate_script(text)
@@ -672,7 +672,7 @@ class CalcBar:
         self._relayout()
 
     def _bar_height(self) -> int:
-        """单行是固定高；多行按行数长，到 _MAX_VISIBLE_LINES 封顶后改为滚动。"""
+        """1 行なら高さは固定。複数行なら行数に合わせて伸び、_MAX_VISIBLE_LINES で頭打ちになったらスクロールに切り替える。"""
         base = self.px(self.metrics.bar_height)
         if not self.multiline:
             return base
@@ -683,7 +683,7 @@ class CalcBar:
         return min(rows, _MAX_VISIBLE_LINES) * line_h + pad * 2
 
     def _right_edge(self) -> int:
-        """算式区能用到的最右边（再往右是那个计算器按钮）。"""
+        """式の領域で使える右端（その右は電卓ボタン）。"""
         m = self.metrics
         return (self.width_px - self.px(m.button_margin)
                 - self.px(m.button_size) - self.px(12))
@@ -697,7 +697,7 @@ class CalcBar:
         self._apply_geometry()
 
     def _relayout_script(self) -> None:
-        """多行：输入区占左边，结果排成一列贴在右边，逐行对齐。"""
+        """複数行：入力領域が左側を占め、結果は右側に 1 列に並べて行ごとにそろえる。"""
         m = self.metrics
         text_x, gap = self.px(m.text_x), self.px(m.result_gap)
         right = self._right_edge()
@@ -705,7 +705,7 @@ class CalcBar:
         line_h = self.font_input.metrics("linespace")
         pad_y = max(0, (self.px(m.bar_height) - line_h) // 2)
 
-        # 结果列的位置：够放下最长的一行，再夹在 30%~60% 之间，免得打字时乱跳
+        # 結果列の位置：いちばん長い行が収まる位置にし、30%〜60% の範囲に収めて、入力中にあちこち動かないようにする
         longest = max((self.font_input.measure(line) for line in self.box.lines()),
                       default=0)
         col = int(min(max(longest + gap, span * 0.30), span * 0.60))
@@ -735,17 +735,17 @@ class CalcBar:
             else:
                 wanted.append([0, self._flash_text, self._flash_color])
 
-        # 存起来：滚动的时候文本没变，只要拿这份重新贴一遍就行
+        # 保存しておく：スクロール時はテキストが変わらないので、これを使って貼り直すだけで済む
         self._result_rows = wanted
         self._result_col = col
         self._result_room = max(self.px(40), right - text_x - col)
         self._result_pad_y = pad_y
 
-        self.root.update_idletasks()          # dlineinfo 得等布局落地才准
+        self.root.update_idletasks()          # dlineinfo はレイアウトが確定してからでないと正確でない
         self._place_result_labels()
 
     def _place_result_labels(self) -> None:
-        """把结果贴到各自那行的基线上。滚过之后行的位置变了，重贴一遍就对齐了。"""
+        """結果をそれぞれの行のベースラインに貼る。スクロールで行の位置が変わっても、貼り直せばそろう。"""
         text_x = self.px(self.metrics.text_x)
         ascent = self.font_result.metrics("ascent")
         used = 0
@@ -754,7 +754,7 @@ class CalcBar:
                 break
             where = self.box.line_metrics(index)
             if where is None:
-                continue                       # 这行滚出视野了
+                continue                       # この行は表示範囲の外にスクロールした
             top, baseline = where
             label = self._line_labels[used]
             used += 1
@@ -766,10 +766,10 @@ class CalcBar:
             label.place_forget()
 
     def _on_scroll(self) -> None:
-        """输入框的视野动了：结果列得跟着重贴，不然就停在上一屏的位置上。
+        """入力欄の表示範囲が動いた：結果列も貼り直さないと、前の画面の位置に取り残される。
 
-        这是 Tk 画屏幕的过程中回调的，当场改布局不安全，排到 idle 里做；
-        一次滚动会连着回调好几次，用标志位并成一次。
+        これは Tk が画面を描いている途中で呼ばれるので、その場でレイアウトを変えるのは安全でない。idle に回す。
+        1 回のスクロールで何度も続けて呼ばれるので、フラグで 1 回にまとめる。
         """
         if not self.multiline or self._scroll_pending:
             return
@@ -778,10 +778,10 @@ class CalcBar:
 
     def _sync_result_labels(self) -> None:
         try:
-            if self.multiline and self.box is not None:   # 重建的空档里可能没有
+            if self.multiline and self.box is not None:   # 作り直しの合間にはないことがある
                 self._place_result_labels()
         finally:
-            # 贴完再放行：贴标签本身不动视野，中间的回调都是回声，丢掉正好
+            # 貼り終えてから解除する：ラベルを貼ること自体は表示範囲を動かさないので、その間の呼び出しはこだまにすぎず、捨ててよい
             self._scroll_pending = False
 
     def _relayout_single(self) -> None:
@@ -805,7 +805,7 @@ class CalcBar:
         result_text = self._flash_text if self._flash_text is not None else self.result_text
         color = self._flash_color if self._flash_text is not None else self.result_color
         if result_text:
-            room = int((right - text_x) * 0.55)       # 算式至少留 45% 的位置
+            room = int((right - text_x) * 0.55)       # 式には少なくとも 45% の幅を残す
             result_text = self._fit(result_text, self.font_result, room)
         result_w = self.font_result.measure(result_text) if result_text else 0
 
@@ -824,7 +824,7 @@ class CalcBar:
 
     @staticmethod
     def _fit(text: str, font: tkfont.Font, max_width: int) -> str:
-        """结果太长就中间省略，保证不会撞到右边的按钮。"""
+        """結果が長すぎるときは途中を省略し、右のボタンにぶつからないようにする。"""
         if max_width <= 0 or font.measure(text) <= max_width:
             return text
         low, high = 4, len(text)
@@ -837,7 +837,7 @@ class CalcBar:
         return shorten(text, low)
 
     # ------------------------------------------------------------------
-    # 动作
+    # 操作
     # ------------------------------------------------------------------
     def commit(self) -> str:
         if self.multiline:
@@ -847,7 +847,7 @@ class CalcBar:
         if result is None:
             return "break"
         if not result.ok or not result.display:
-            self._flash(result.error or "算式还没写完", error=True)
+            self._flash(result.error or "式がまだ書きかけです", error=True)
             return "break"
         self.evaluator.commit(result)
         winapi.set_clipboard_text(format_value(result.value))
@@ -857,15 +857,15 @@ class CalcBar:
             del self.history[:-_HISTORY_LIMIT]
         self.history_index = len(self.history)
         self._select_all()
-        self._flash("已复制到剪贴板")
+        self._flash("クリップボードにコピーしました")
         return "break"
 
     def _commit_script(self) -> None:
-        """多行：复制最后一个显示行的值，整块草稿进多行历史。"""
+        """複数行：表示されている最後の行の値をコピーし、下書きのブロック全体を複数行の履歴に入れる。"""
         last = next((line for line in reversed(self.script)
                      if line.shown and line.result.ok and line.result.display), None)
         if last is None:
-            self._flash("还没有能复制的结果", error=True)
+            self._flash("コピーできる結果がまだありません", error=True)
             return
         self.evaluator.commit(last.result)
         winapi.set_clipboard_text(format_value(last.result.value))
@@ -874,7 +874,7 @@ class CalcBar:
             self.history_multi.append(block)
             del self.history_multi[:-_MULTI_HISTORY_LIMIT]
         self.history_index = len(self.history_multi)
-        self._flash("已复制到剪贴板")
+        self._flash("クリップボードにコピーしました")
 
     def recall(self, step: int) -> str:
         history = self.history_multi if self.multiline else self.history
@@ -899,25 +899,25 @@ class CalcBar:
         else:
             self.quit()
 
-    # -- 单行 / 多行 ------------------------------------------------------
+    # -- 1 行 / 複数行 ------------------------------------------------------
     def toggle_multiline(self) -> str:
-        """两种模式各留各的草稿：切过去是空白的，切回来还在。"""
+        """2 つのモードはそれぞれ別の下書きを持つ：切り替えた先は空で、戻ると残っている。"""
         self._drafts[self.multiline] = self.box.text()
         self.multiline = not self.multiline
         self.multiline_var.set(self.multiline)
         self._rebuild(self._drafts[self.multiline])
         history = self.history_multi if self.multiline else self.history
         self.history_index = len(history)
-        self._flash("多行模式：每行一步，行首 show 显示中间结果" if self.multiline
-                    else "单行模式")
+        self._flash("複数行モード：1 行に 1 ステップ、行頭に show で途中結果を表示" if self.multiline
+                    else "1 行モード")
         return "break"
 
     def _rebuild(self, text: str, caret: str | None = None) -> None:
-        """控件类型或字号变了，只能把界面整个重搭一次。
+        """ウィジェットの種類やフォントサイズが変わったら、画面全体を一度組み直すしかない。
 
-        文本已经由调用方取走了，这里先把 box 摘掉再拆：不然 _build 途中
-        _bar_height 会去问一个已经销毁的控件，多行模式下直接抛 TclError。
-        摘掉之后它按一行算，末尾 _on_change 会把真正的高度补回来。
+        テキストは呼び出し側がすでに取り出しているので、ここでは先に box を外してから壊す：そうしないと _build の途中で
+        _bar_height が破棄済みのウィジェットに問い合わせ、複数行モードではそのまま TclError になる。
+        外した後は 1 行として計算され、最後の _on_change が本当の高さに戻す。
         """
         self.box = None
         self.outer.destroy()
@@ -935,7 +935,7 @@ class CalcBar:
         self._save_config()
         self.root.destroy()
 
-    # -- 短暂提示（“已复制”之类，1 秒后自动变回结果） -----------------------
+    # -- 短いお知らせ（「コピーしました」など。1 秒後に自動で結果表示に戻る） -----------------------
     def _cancel_flash(self) -> None:
         if self._flash_after is not None:
             self.root.after_cancel(self._flash_after)

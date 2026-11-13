@@ -5,8 +5,8 @@ using System.Windows.Forms;
 namespace KKCalendar
 {
     /// <summary>
-    /// 托盘图标和右键菜单。菜单用的是原生 HMENU（WinForms 旧版 ContextMenu），
-    /// 所以外观和系统其它托盘菜单一致，深色模式也跟着走。
+    /// トレイアイコンと右クリックメニュー。メニューはネイティブの HMENU（WinForms の旧 ContextMenu）なので、
+    /// 見た目はシステムのほかのトレイメニューと同じで、ダークモードにも追従する。
     /// </summary>
     internal sealed class TrayIcon : IDisposable
     {
@@ -22,16 +22,16 @@ namespace KKCalendar
 
         public TrayIcon()
         {
-            _open = new MenuItem("打开日历", (s, e) => OpenRequested?.Invoke()) { DefaultItem = true };
-            _update = new MenuItem("更新日历", (s, e) => UpdateRequested?.Invoke());
+            _open = new MenuItem("カレンダーを開く", (s, e) => OpenRequested?.Invoke()) { DefaultItem = true };
+            _update = new MenuItem("祝日データを更新", (s, e) => UpdateRequested?.Invoke());
             _dataInfo = new MenuItem("") { Enabled = false };
-            _rokuyo = new MenuItem("显示六曜", (s, e) =>
+            _rokuyo = new MenuItem("六曜を表示", (s, e) =>
             {
                 _rokuyo!.Checked = !_rokuyo.Checked;
                 RokuyoToggled?.Invoke(_rokuyo.Checked);
             });
-            _autoStart = new MenuItem("开机自动启动", (s, e) => ToggleAutoStart());
-            _exit = new MenuItem("退出", (s, e) => ExitRequested?.Invoke());
+            _autoStart = new MenuItem("スタートアップに登録", (s, e) => ToggleAutoStart());
+            _exit = new MenuItem("終了", (s, e) => ExitRequested?.Invoke());
 
             var menu = new ContextMenu(new[]
             {
@@ -69,7 +69,7 @@ namespace KKCalendar
             set
             {
                 _update.Enabled = value;
-                _update.Text = value ? "更新日历" : "正在更新…";
+                _update.Text = value ? "祝日データを更新" : "更新中…";
             }
         }
 
@@ -77,7 +77,7 @@ namespace KKCalendar
 
         public void Show() => _icon.Visible = true;
 
-        /// <summary>重画图标（日期变了、任务栏深浅色变了、DPI 变了都要调）。</summary>
+        /// <summary>アイコンを描き直す（日付、タスクバーのライト / ダーク、DPI が変わったときに呼ぶ）。</summary>
         public void Refresh(DateTime today, bool holiday, string tooltip)
         {
             using (var bitmap = TrayIconPainter.Render(today.Day, Native.SmallIconSize(), Theme.TaskbarIsLight(), holiday))
@@ -87,7 +87,7 @@ namespace KKCalendar
                 _current?.Dispose();
                 _current = icon;
             }
-            // NotifyIcon.Text 超过 63 个字符会抛异常
+            // NotifyIcon.Text は 63 文字を超えると例外を投げる
             _icon.Text = tooltip.Length > 63 ? tooltip.Substring(0, 63) : tooltip;
         }
 
@@ -102,7 +102,7 @@ namespace KKCalendar
             }
             catch (Exception ex)
             {
-                Notify("KKCalendar", "设置开机启动失败：" + ex.Message, error: true);
+                Notify("KKCalendar", "スタートアップの設定に失敗しました：" + ex.Message, error: true);
             }
         }
 

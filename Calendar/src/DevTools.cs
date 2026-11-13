@@ -10,9 +10,9 @@ using KKCalendar.Core;
 namespace KKCalendar
 {
     /// <summary>
-    /// 开发用的命令行开关（不影响正常使用）：
-    ///   KKCalendar.exe --screenshot out.png [2026-09] [dark|light]   弹出日历、截图、退出
-    ///   KKCalendar.exe --tray-preview out.png                        把各尺寸的托盘图标画到一张图上
+    /// 開発用のコマンドラインオプション（ふだんの利用には影響しない）：
+    ///   KKCalendar.exe --screenshot out.png [2026-09] [dark|light]   カレンダーを表示してスクリーンショットを撮り、終了
+    ///   KKCalendar.exe --tray-preview out.png                        各サイズのトレイアイコンを 1 枚の画像に描く
     /// </summary>
     internal static class DevTools
     {
@@ -37,7 +37,7 @@ namespace KKCalendar
             return false;
         }
 
-        /// <summary>真实地跑一遍「更新日历」，把结果写进文本文件。</summary>
+        /// <summary>「祝日データを更新」を実際に 1 回実行し、結果をテキストファイルに書き出す。</summary>
         static async void UpdateCheck(string output, App app)
         {
             string result;

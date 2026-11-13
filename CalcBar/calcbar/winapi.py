@@ -1,6 +1,6 @@
-"""Windows 平台相关的小工具：DPI、圆角、剪贴板、深浅色、显示器工作区。
+"""Windows 固有の小道具：DPI、角丸、クリップボード、ライト / ダーク、ディスプレイの作業領域。
 
-全部用 ctypes 调系统 API，不需要 pywin32；任何一项失败都只是降级，不影响计算。
+すべて ctypes でシステム API を呼ぶので pywin32 は不要。どれが失敗しても機能が控えめになるだけで、計算には影響しない。
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ except OSError:                                   # pragma: no cover
 # --------------------------------------------------------------------------
 
 def enable_dpi_awareness() -> None:
-    """开启 per-monitor v2 DPI 感知，否则高分屏上字是糊的。"""
+    """per-monitor v2 の DPI 対応を有効にする。しないと高 DPI 画面で文字がぼやける。"""
     try:
         user32.SetProcessDpiAwarenessContext(ctypes.c_void_p(-4))
         return
@@ -50,10 +50,10 @@ def _system_dpi_scale() -> float:
 
 
 def cursor_dpi_scale() -> float:
-    """鼠标所在显示器的缩放倍数（125% -> 1.25）。
+    """マウスのあるディスプレイの拡大率（125% -> 1.25）。
 
-    不用窗口句柄取，是因为 tk 设了 overrideredirect 之后会重建窗口，
-    早期拿到的 HWND 会失效。
+    ウィンドウハンドルから取らないのは、tk が overrideredirect を設定するとウィンドウを作り直し、
+    早い段階で取った HWND が無効になるため。
     """
     try:
         point = _POINT()
@@ -71,7 +71,7 @@ def cursor_dpi_scale() -> float:
 
 
 # --------------------------------------------------------------------------
-# 窗口外观
+# ウィンドウの外観
 # --------------------------------------------------------------------------
 
 _DWMWA_WINDOW_CORNER_PREFERENCE = 33
@@ -80,14 +80,14 @@ _DWMWCP_ROUNDSMALL = 3
 
 
 def toplevel_hwnd(widget) -> int:
-    """拿到 tk 窗口真正的顶层 HWND。"""
+    """tk ウィンドウの本当のトップレベル HWND を取得する。"""
     ident = widget.winfo_id()
     parent = user32.GetParent(wintypes.HWND(ident))
     return int(parent) if parent else int(ident)
 
 
 def round_corners(hwnd: int, small: bool = False) -> bool:
-    """让 Win11 的 DWM 给无边框窗口画抗锯齿圆角 + 阴影。"""
+    """Win11 の DWM に、枠なしウィンドウのアンチエイリアス付き角丸 + 影を描かせる。"""
     if dwmapi is None:
         return False
     value = ctypes.c_int(_DWMWCP_ROUNDSMALL if small else _DWMWCP_ROUND)
@@ -102,7 +102,7 @@ def round_corners(hwnd: int, small: bool = False) -> bool:
 
 
 def focus_window(hwnd: int) -> None:
-    """无边框窗口不会自动拿到焦点，手动抢一下。"""
+    """枠なしウィンドウは自動でフォーカスを得ないので、手動で取りにいく。"""
     try:
         user32.SetForegroundWindow(wintypes.HWND(hwnd))
     except OSError:
@@ -110,7 +110,7 @@ def focus_window(hwnd: int) -> None:
 
 
 # --------------------------------------------------------------------------
-# 显示器
+# ディスプレイ
 # --------------------------------------------------------------------------
 
 class _RECT(ctypes.Structure):
@@ -128,7 +128,7 @@ class _MONITORINFO(ctypes.Structure):
 
 
 def cursor_work_area() -> tuple[int, int, int, int]:
-    """鼠标所在显示器的工作区 (x, y, w, h)，任务栏已排除。"""
+    """マウスのあるディスプレイの作業領域 (x, y, w, h)。タスクバーは除く。"""
     try:
         point = _POINT()
         user32.GetCursorPos(ctypes.byref(point))
@@ -145,7 +145,7 @@ def cursor_work_area() -> tuple[int, int, int, int]:
 
 
 # --------------------------------------------------------------------------
-# 剪贴板
+# クリップボード
 # --------------------------------------------------------------------------
 
 _CF_UNICODETEXT = 13
@@ -162,7 +162,7 @@ user32.SetClipboardData.argtypes = [wintypes.UINT, ctypes.c_void_p]
 
 
 def set_clipboard_text(text: str) -> bool:
-    """写系统剪贴板。用 Win32 是为了程序退出后内容还在。"""
+    """システムのクリップボードに書き込む。Win32 を使うのは、プログラム終了後も内容が残るようにするため。"""
     if not user32.OpenClipboard(None):
         return False
     try:
@@ -186,11 +186,11 @@ def set_clipboard_text(text: str) -> bool:
 
 
 # --------------------------------------------------------------------------
-# 系统主题
+# システムのテーマ
 # --------------------------------------------------------------------------
 
 def prefers_dark() -> bool:
-    """跟随 Windows 的“应用模式”。"""
+    """Windows の「アプリモード」に追従する。"""
     try:
         import winreg
         key = winreg.OpenKey(

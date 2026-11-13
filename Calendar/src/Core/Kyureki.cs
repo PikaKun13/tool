@@ -2,7 +2,7 @@ using System;
 
 namespace KKCalendar.Core
 {
-    /// <summary>旧暦的月和日。</summary>
+    /// <summary>旧暦の月と日。</summary>
     public readonly struct KyurekiDate
     {
         public KyurekiDate(int month, bool leap, int day)
@@ -20,11 +20,11 @@ namespace KKCalendar.Core
     }
 
     /// <summary>
-    /// 旧暦和六曜。查的是 tools/gen_astro.py 用 JPL 星历预先算好的月表（1900–2100）。
+    /// 旧暦と六曜。tools/gen_astro.py が JPL の暦であらかじめ計算した月表（1900–2100）を引く。
     /// </summary>
     public static class Kyureki
     {
-        /// <summary>六曜按 (旧暦月 + 旧暦日) mod 6 排列：旧暦正月初一是先勝。</summary>
+        /// <summary>六曜は (旧暦月 + 旧暦日) mod 6 の順に並ぶ：旧暦の正月朔日が先勝。</summary>
         static readonly string[] RokuyoNames = { "大安", "赤口", "先勝", "友引", "先負", "仏滅" };
 
         static readonly DateTime[] Starts = BuildStarts();
@@ -40,7 +40,7 @@ namespace KKCalendar.Core
             return starts;
         }
 
-        /// <summary>表能覆盖到的范围（含）。</summary>
+        /// <summary>表でカバーできる範囲（両端を含む）。</summary>
         public static DateTime MinDate => Starts[0];
         public static DateTime MaxDate => Starts[Starts.Length - 1].AddDays(-1);
 
@@ -51,7 +51,7 @@ namespace KKCalendar.Core
             if (date < MinDate || date > MaxDate)
                 return false;
 
-            // 最后一项是哨兵，找 Starts[i] <= date < Starts[i + 1]
+            // 最後の要素は番兵。Starts[i] <= date < Starts[i + 1] となる i を探す
             int lo = 0, hi = Starts.Length - 2;
             while (lo < hi)
             {
@@ -73,7 +73,7 @@ namespace KKCalendar.Core
             return RokuyoNames[(k.Month + k.Day) % 6];
         }
 
-        /// <summary>给测试用：旧暦第 index 个月的初一和月份（閏月为负）。</summary>
+        /// <summary>テスト用：旧暦で index 番目の月の朔日と月番号（閏月は負）。</summary>
         internal static int MonthCount => Starts.Length - 1;
         internal static DateTime MonthStart(int index) => Starts[index];
         internal static int MonthNumber(int index) => AstroTables.MonthNumbers[index];

@@ -1,4 +1,4 @@
-"""生成 exe 用的多尺寸图标 assets/calcbar.ico。"""
+"""exe 用のマルチサイズアイコン assets/calcbar.ico を生成する。"""
 
 from pathlib import Path
 
@@ -7,7 +7,7 @@ from PIL import Image, ImageDraw
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "assets" / "calcbar.ico"
 
-N = 1024                      # 先画大的，再缩到各个尺寸
+N = 1024                      # まず大きく描いてから各サイズに縮小する
 BODY = "#26262A"
 SCREEN = "#F4F3F0"
 KEY = "#8E8E96"

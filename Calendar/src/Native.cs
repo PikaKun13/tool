@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace KKCalendar
 {
-    /// <summary>用到的 Win32 / DWM 接口。任何一项失败都只是降级，不影响日历本身。</summary>
+    /// <summary>使っている Win32 / DWM API。どれが失敗しても機能が控えめになるだけで、カレンダー自体には影響しない。</summary>
     internal static class Native
     {
         [StructLayout(LayoutKind.Sequential)]
@@ -51,7 +51,7 @@ namespace KKCalendar
         const int SM_CXSMICON = 49;
 
         // ------------------------------------------------------------------
-        // 显示器
+        // ディスプレイ
         // ------------------------------------------------------------------
 
         public sealed class MonitorArea
@@ -94,8 +94,8 @@ namespace KKCalendar
         [DllImport("user32.dll")] static extern int GetSystemMetricsForDpi(int index, uint dpi);
 
         /// <summary>
-        /// 托盘小图标的边长：100% 是 16，150% 是 24。按主显示器「现在」的 DPI 算——
-        /// GetSystemMetrics 给的是登录时的 DPI，改了缩放不注销的话就不准了。
+        /// トレイの小アイコンの一辺：100% なら 16、150% なら 24。メインディスプレイの「現在の」DPI で計算する——
+        /// GetSystemMetrics が返すのはサインイン時の DPI なので、拡大率を変えてサインアウトしていないと合わない。
         /// </summary>
         public static int SmallIconSize()
         {
@@ -111,7 +111,7 @@ namespace KKCalendar
         }
 
         // ------------------------------------------------------------------
-        // 窗口
+        // ウィンドウ
         // ------------------------------------------------------------------
 
         static readonly IntPtr HWND_TOPMOST = new IntPtr(-1);
@@ -121,8 +121,8 @@ namespace KKCalendar
             SetWindowPos(hwnd, HWND_TOPMOST, x, y, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
 
         /// <summary>
-        /// 抢前台。托盘点击时系统会给我们前台权限，一般直接成功；
-        /// 不成功就借前台窗口的输入队列再试一次。
+        /// 前面に出る。トレイのクリック時はシステムがフォアグラウンド権限をくれるので、たいていそのまま成功する。
+        /// 失敗したら、フォアグラウンドウィンドウの入力キューを借りてもう一度試す。
         /// </summary>
         public static void ForceForeground(IntPtr hwnd)
         {
@@ -140,7 +140,7 @@ namespace KKCalendar
         }
 
         // ------------------------------------------------------------------
-        // DWM：圆角、深色标题、亚克力背景
+        // DWM：角丸、ダークのタイトルバー、アクリル背景
         // ------------------------------------------------------------------
 
         const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
@@ -148,7 +148,7 @@ namespace KKCalendar
         const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
         const int DWMWA_SYSTEMBACKDROP_TYPE = 38;
         const int DWMWCP_ROUND = 2;
-        const int DWMSBT_TRANSIENTWINDOW = 3;     // 弹出层用的亚克力
+        const int DWMSBT_TRANSIENTWINDOW = 3;     // ポップアップ用のアクリル
 
         static bool SetAttribute(IntPtr hwnd, int attribute, int value)
         {
@@ -166,7 +166,7 @@ namespace KKCalendar
 
         public static void SetDarkFrame(IntPtr hwnd, bool dark) => SetAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, dark ? 1 : 0);
 
-        /// <summary>Win11 22H2 起支持；返回 false 时调用方改用纯色背景。</summary>
+        /// <summary>Win11 22H2 以降で対応。false が返ったら呼び出し側は単色の背景にする。</summary>
         public static bool TryAcrylic(IntPtr hwnd)
         {
             if (Environment.OSVersion.Version.Build < 22621)
@@ -182,7 +182,7 @@ namespace KKCalendar
         }
 
         // ------------------------------------------------------------------
-        // 菜单深色模式（uxtheme 未公开的序号函数，Win10 1903+ 才有）
+        // メニューのダークモード（uxtheme の非公開の序数エクスポート。Win10 1903 以降のみ）
         // ------------------------------------------------------------------
 
         [DllImport("uxtheme.dll", EntryPoint = "#135")] static extern int SetPreferredAppMode(int mode);

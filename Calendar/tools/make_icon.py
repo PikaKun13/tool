@@ -1,6 +1,6 @@
-"""生成 exe 用的多尺寸图标 src/Assets/KKCalendar.ico（托盘图标是程序运行时自己画的）。
+"""exe 用のマルチサイズアイコン src/Assets/KKCalendar.ico を生成する（トレイアイコンはプログラムが実行時に自分で描く）。
 
-    .venv\\Scripts\\python tools\\make_icon.py [预览.png]
+    .venv\\Scripts\\python tools\\make_icon.py [プレビュー.png]
 """
 
 import sys
@@ -11,7 +11,7 @@ from PIL import Image, ImageDraw
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "src" / "Assets" / "KKCalendar.ico"
 
-N = 1024                      # 先画大的，再缩到各个尺寸
+N = 1024                      # まず大きく描いてから各サイズに縮小する
 PAGE = "#FBFAF8"
 EDGE = "#D9D6D0"
 HEADER = "#D93A3F"
@@ -30,19 +30,19 @@ def draw() -> Image.Image:
     box = [margin, top, N - margin, N - margin]
     pen.rounded_rectangle(box, radius=radius, fill=PAGE, outline=EDGE, width=int(N * 0.012))
 
-    # 红色页眉：上半部分圆角、下沿平直
+    # 赤いヘッダー：上側は角丸、下端はまっすぐ
     header_h = N * 0.24
     pen.rounded_rectangle([margin, top, N - margin, top + header_h + radius],
                           radius=radius, fill=HEADER)
     pen.rectangle([margin, top + header_h, N - margin, top + header_h + radius], fill=PAGE)
 
-    # 两个挂环
+    # 2 つのリング
     for cx in (N * 0.32, N * 0.68):
         w, h = N * 0.075, N * 0.2
         pen.rounded_rectangle([cx - w / 2, top - h * 0.45, cx + w / 2, top + h * 0.55],
                               radius=w / 2, fill=RING)
 
-    # 日期格：3 行 4 列的圆点，其中一个是红色的祝日
+    # 日付のマス：3 行 4 列の丸。そのうち 1 つが赤い祝日
     cols, rows = 4, 3
     left, right = margin + N * 0.13, N - margin - N * 0.13
     upper, lower = top + header_h + N * 0.13, N - margin - N * 0.12

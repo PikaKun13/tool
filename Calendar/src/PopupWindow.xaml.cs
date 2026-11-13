@@ -11,7 +11,7 @@ using KKCalendar.Core;
 
 namespace KKCalendar
 {
-    /// <summary>从托盘弹出的日历。只建一次，之后反复 Show / Hide。</summary>
+    /// <summary>トレイから開くカレンダー。一度だけ作り、あとは Show / Hide を繰り返す。</summary>
     public partial class PopupWindow : Window
     {
         static readonly string[] Weekdays = { "日", "月", "火", "水", "木", "金", "土" };
@@ -30,10 +30,10 @@ namespace KKCalendar
         Native.POINT _anchor;
         int _wheel;
 
-        /// <summary>开发截图用：失去焦点也不收起。</summary>
+        /// <summary>開発用のスクリーンショット向け：フォーカスを失っても閉じない。</summary>
         internal bool StayOpen { get; set; }
 
-        /// <summary>最近一次收起的时刻（Environment.TickCount）。</summary>
+        /// <summary>最後に閉じた時刻（Environment.TickCount）。</summary>
         internal int LastHiddenAt { get; private set; } = int.MinValue / 2;
 
         internal PopupWindow(HolidayBook book, bool showRokuyo)
@@ -54,10 +54,10 @@ namespace KKCalendar
         }
 
         // ------------------------------------------------------------------
-        // 对外
+        // 公開メソッド
         // ------------------------------------------------------------------
 
-        /// <summary>在 anchor 所在显示器的任务栏旁边弹出来，显示本月。</summary>
+        /// <summary>anchor のあるディスプレイのタスクバーの横に開き、今月を表示する。</summary>
         internal void ShowNear(Native.POINT anchor, DateTime? month = null)
         {
             _anchor = anchor;
@@ -70,7 +70,7 @@ namespace KKCalendar
             Place();
             if (!IsVisible)
                 Show();
-            Place();                 // 显示之后拿真实尺寸再摆一次（DPI 不同的显示器上会变）
+            Place();                 // 表示後に実際のサイズでもう一度配置する（DPI の違うディスプレイでは変わる）
             Activate();
             Native.ForceForeground(_hwnd);
             Focus();
@@ -97,7 +97,7 @@ namespace KKCalendar
             if (IsVisible) Render();
         }
 
-        /// <summary>日期变了（过了零点、从睡眠醒来）。</summary>
+        /// <summary>日付が変わった（0 時を過ぎた、スリープから復帰した）。</summary>
         internal void TodayChanged()
         {
             _today = DateTime.Today;
@@ -119,7 +119,7 @@ namespace KKCalendar
         }
 
         // ------------------------------------------------------------------
-        // 窗口外观与位置
+        // ウィンドウの外観と位置
         // ------------------------------------------------------------------
 
         void OnSourceInitialized(object? sender, EventArgs e)
@@ -129,7 +129,7 @@ namespace KKCalendar
             if (source?.CompositionTarget != null)
                 source.CompositionTarget.BackgroundColor = Colors.Transparent;
             Native.RoundCorners(_hwnd);
-            Native.DisableDwmTransitions(_hwnd);   // 系统的缩放动画换成我们自己的上滑
+            Native.DisableDwmTransitions(_hwnd);   // システムの拡大アニメーションを、自前のスライドアップに置き換える
             _acrylic = Native.TryAcrylic(_hwnd);
             ApplyBackdrop();
         }
@@ -138,12 +138,12 @@ namespace KKCalendar
         {
             if (_hwnd != IntPtr.Zero)
                 Native.SetDarkFrame(_hwnd, _theme.Dark);
-            // 有亚克力就盖一层半透明底色（壁纸太花时字也看得清）；没有（Win10 / 旧版 Win11）就用纯色
+            // アクリルが使えるなら半透明の下地を 1 枚重ねる（壁紙がにぎやかでも文字が読めるように）。使えない（Win10 / 古い Win11）なら単色
             var bg = _theme.Background;
             Root.Background = Theme.Brush(_acrylic ? Color.FromArgb(0xB0, bg.R, bg.G, bg.B) : bg);
         }
 
-        /// <summary>贴着任务栏、靠右下角（任务栏在别的边就贴那条边）。</summary>
+        /// <summary>タスクバーに沿って右下に置く（タスクバーがほかの辺にあればその辺に沿わせる）。</summary>
         void Place()
         {
             if (_hwnd == IntPtr.Zero)
@@ -167,13 +167,13 @@ namespace KKCalendar
             var work = area.Work;
             int x = work.Right - w - margin;
             int y = work.Bottom - h - margin;
-            if (work.Top > mon.Top)                      // 任务栏在上
+            if (work.Top > mon.Top)                      // タスクバーが上
                 y = work.Top + margin;
-            else if (work.Left > mon.Left)               // 任务栏在左
+            else if (work.Left > mon.Left)               // タスクバーが左
                 x = work.Left + margin;
             else if (work.Bottom == mon.Bottom && work.Right == mon.Right
                      && _anchor.Y < (mon.Top + mon.Bottom) / 2)
-                y = work.Top + margin;                   // 自动隐藏的任务栏在上
+                y = work.Top + margin;                   // 自動的に隠れるタスクバーが上
             x = Math.Max(work.Left, Math.Min(x, work.Right - w));
             y = Math.Max(work.Top, Math.Min(y, work.Bottom - h));
             Native.MoveWindow(_hwnd, x, y);
@@ -189,7 +189,7 @@ namespace KKCalendar
         }
 
         // ------------------------------------------------------------------
-        // 翻月
+        // 月の移動
         // ------------------------------------------------------------------
 
         void Step(int months) => GoTo(_month.AddMonths(months), Math.Sign(months));
@@ -215,7 +215,7 @@ namespace KKCalendar
 
         protected override void OnMouseWheel(MouseWheelEventArgs e)
         {
-            // 触控板一次只给几十的 delta，攒够 120 才翻一页
+            // タッチパッドは一度に数十の delta しか来ないので、120 たまったら 1 か月めくる
             _wheel += e.Delta;
             while (_wheel >= 120) { Step(-1); _wheel -= 120; }
             while (_wheel <= -120) { Step(1); _wheel += 120; }
@@ -236,7 +236,7 @@ namespace KKCalendar
         }
 
         // ------------------------------------------------------------------
-        // 绘制
+        // 描画
         // ------------------------------------------------------------------
 
         void BuildGrid()
@@ -272,7 +272,7 @@ namespace KKCalendar
             MonthTitle.Text = $"{_month.Year}年{_month.Month}月";
             MonthEra.Text = Wareki.Format(_month) ?? "";
 
-            var first = _month.AddDays(-(int)_month.DayOfWeek);   // 周日开头
+            var first = _month.AddDays(-(int)_month.DayOfWeek);   // 日曜始まり
             for (int i = 0; i < _cells.Length; i++)
                 _cells[i].Update(first.AddDays(i));
             RenderHolidayList();
@@ -326,7 +326,7 @@ namespace KKCalendar
                 return;
             }
 
-            // 一列最多 4 行；超过（比如 2019 年 5 月）就分两列，日期写短一点
+            // 1 列は最大 4 行。超えたら（2019 年 5 月など）2 列に分け、日付を短く書く
             int columns = items.Count > 4 ? 2 : 1;
             int rows = (items.Count + columns - 1) / columns;
             for (int c = 0; c < columns; c++)
@@ -358,7 +358,7 @@ namespace KKCalendar
             }
         }
 
-        /// <summary>日历里的一格：日期数字 + 六曜。</summary>
+        /// <summary>カレンダーの 1 マス：日付の数字 + 六曜。</summary>
         sealed class DayCell
         {
             readonly PopupWindow _owner;

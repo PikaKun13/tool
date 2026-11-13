@@ -1,4 +1,4 @@
-"""配色与尺寸。尺寸都是“逻辑像素”，用之前要乘 DPI 缩放。"""
+"""配色とサイズ。サイズはすべて「論理ピクセル」で、使う前に DPI の倍率を掛ける。"""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from dataclasses import dataclass
 class Palette:
     bg: str
     fg: str
-    muted: str            # “= 结果”的灰
+    muted: str            # 「= 結果」のグレー
     placeholder: str
     icon: str
     error: str
@@ -66,11 +66,11 @@ DARK = Palette(
 
 @dataclass(frozen=True)
 class Metrics:
-    """逻辑像素尺寸（按 96 DPI 设计）。"""
+    """論理ピクセルでのサイズ（96 DPI 基準で設計）。"""
 
-    bar_width: int = 720          # 出厂宽度；用户拖边缘改的是 CalcBar.bar_width
-    min_bar_width: int = 380      # 再窄就放不下「算式 + = 结果」了
-    resize_edge: int = 6          # 左右各留这么宽的一条用来拉伸
+    bar_width: int = 720          # 初期の幅。ユーザーが端をドラッグして変えるのは CalcBar.bar_width
+    min_bar_width: int = 380      # これより狭いと「式 + = 結果」が収まらない
+    resize_edge: int = 6          # 左右それぞれ、この幅の帯をリサイズ用に取っておく
     bar_height: int = 66
     icon_x: int = 22
     icon_size: int = 22

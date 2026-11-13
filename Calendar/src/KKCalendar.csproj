@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <!-- .NET Framework 4.8 是 Windows 10/11 自带的，exe 拷过去就能跑 -->
+    <!-- .NET Framework 4.8 は Windows 10/11 に標準搭載なので、exe をコピーするだけで動く -->
     <TargetFramework>net48</TargetFramework>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
@@ -26,7 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- 内閣府「国民の祝日」CSV 的出厂快照（Shift_JIS 原样）。联网更新后以下载的为准 -->
+    <!-- 内閣府「国民の祝日」CSV の出荷時のスナップショット（Shift_JIS のまま）。オンライン更新後はダウンロードしたものが優先 -->
     <EmbeddedResource Include="Data\syukujitsu.csv" LogicalName="syukujitsu.csv" />
     <Resource Include="Assets\KKCalendar.ico" />
   </ItemGroup>

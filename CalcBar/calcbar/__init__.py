@@ -1,3 +1,3 @@
-"""CalcBar —— 一个 Python 语法的极简计算条。"""
+"""CalcBar —— Python の文法で書けるミニマルな電卓バー。"""
 
 __version__ = "1.0.0"

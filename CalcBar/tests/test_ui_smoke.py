@@ -1,6 +1,6 @@
-﻿"""界面冒烟测试：真的建一个窗口，把交互路径走一遍再关掉。
+﻿"""画面のスモークテスト：実際にウィンドウを作り、操作の経路をひととおりたどってから閉じる。
 
-会在屏幕上一闪而过，属正常现象。测试期间剪贴板和配置文件都被接管，不会动真的。
+画面に一瞬ウィンドウが出るのは正常。テスト中はクリップボードと設定ファイルを差し替えるので、本物には触れない。
 """
 
 import sys
@@ -15,7 +15,7 @@ from calcbar.ui import CalcBar                  # noqa: E402
 
 
 class _Event:
-    """假的鼠标事件：拉伸只看 x_root 和 widget。"""
+    """偽のマウスイベント：リサイズで見るのは x_root と widget だけ。"""
 
     def __init__(self, x_root, y_root=0, widget=None):
         self.x_root, self.y_root, self.widget = x_root, y_root, widget
@@ -27,7 +27,7 @@ class UiSmokeTest(unittest.TestCase):
         cls._real_clipboard = winapi.set_clipboard_text
         cls.copied = []
         winapi.set_clipboard_text = lambda text: cls.copied.append(text) or True
-        CalcBar._save_config = lambda self: None       # 别写配置文件
+        CalcBar._save_config = lambda self: None       # 設定ファイルを書かない
         cls.app = CalcBar()
         cls.app.win_x, cls.app.win_y = 200, 200
         cls.app._apply_geometry()
@@ -42,7 +42,7 @@ class UiSmokeTest(unittest.TestCase):
         self.app.set_text("")
         self.copied.clear()
 
-    # -- 显示 -----------------------------------------------------------
+    # -- 表示 -----------------------------------------------------------
     def test_result_follows_typing(self):
         self.app.set_text("27*27")
         self.assertEqual(self.app.result_text, "= 729")
@@ -58,7 +58,7 @@ class UiSmokeTest(unittest.TestCase):
 
     def test_error_is_shown(self):
         self.app.set_text("1/0")
-        self.assertEqual(self.app.result_text, "除数不能为 0")
+        self.assertEqual(self.app.result_text, "0 で割ることはできません")
         self.assertEqual(self.app.result.cget("fg"), self.app.palette.error)
 
     def test_result_sits_right_after_the_expression(self):
@@ -73,10 +73,10 @@ class UiSmokeTest(unittest.TestCase):
         self.app.root.update_idletasks()
         right_edge = self.app.result.winfo_x() + self.app.result.winfo_width()
         self.assertLess(right_edge, self.app.px(self.app.metrics.bar_width))
-        self.assertIn("…", self.app.result.cget("text"))       # 显示的是省略版
-        self.assertNotIn("…", self.app.result_text)            # 复制的是完整值
+        self.assertIn("…", self.app.result.cget("text"))       # 表示は省略版
+        self.assertNotIn("…", self.app.result_text)            # コピーされるのは完全な値
 
-    # -- 输入 -----------------------------------------------------------
+    # -- 入力 -----------------------------------------------------------
     def test_chip_inserts_and_puts_caret_inside_parens(self):
         self.app.insert("sqrt()", 1)
         self.assertEqual(self.app.text(), "sqrt()")
@@ -86,7 +86,7 @@ class UiSmokeTest(unittest.TestCase):
         self.assertEqual(self.app.result_text, "= 4.0")
 
     def test_pasted_control_characters_are_scrubbed(self):
-        self.app.set_text("1+\n2\t*\x1b3")        # 换行/制表变空格，Esc 字符丢掉
+        self.app.set_text("1+\n2\t*\x1b3")        # 改行・タブは空白に、Esc 文字は捨てる
         self.assertEqual(self.app.text(), "1+ 2 *3")
         self.assertEqual(self.app.result_text, "= 7")
 
@@ -98,7 +98,7 @@ class UiSmokeTest(unittest.TestCase):
                 self.assertEqual(self.app.text(), item.insert)
                 self.assertLessEqual(item.caret_back, len(item.insert))
 
-    # -- 动作 -----------------------------------------------------------
+    # -- 操作 -----------------------------------------------------------
     def test_enter_copies_result_and_remembers_ans(self):
         self.app.set_text("27*27")
         self.app.commit()
@@ -153,7 +153,7 @@ class UiSmokeTest(unittest.TestCase):
         self.assertFalse(self.app.panel_open)
         self.assertEqual(self.app.text(), "5")
 
-    # -- 窗口 -----------------------------------------------------------
+    # -- ウィンドウ -----------------------------------------------------------
     def test_window_has_no_frame_and_is_rounded(self):
         self.assertTrue(self.app.root.overrideredirect())
         self.assertTrue(self.app.hwnd)
@@ -169,17 +169,17 @@ class UiSmokeTest(unittest.TestCase):
 
     def test_right_click_menu_labels_match_their_actions(self):
         menu = self.app._menu
-        self.assertEqual(menu.type(2), "command")          # _popup_menu 改的是这一项
-        self.assertIn("面板", menu.entrycget(2, "label"))
+        self.assertEqual(menu.type(2), "command")          # _popup_menu が書き換えるのはこの項目
+        self.assertIn("パネル", menu.entrycget(2, "label"))
 
     def test_scale_is_applied_to_geometry(self):
         expected = self.app.px(self.app.metrics.bar_width)
         self.app.root.update_idletasks()
         self.assertEqual(self.app.root.winfo_width(), expected)
 
-    # -- 拉伸宽度 --------------------------------------------------------
+    # -- 幅のリサイズ --------------------------------------------------------
     def restorable(self):
-        """借来改尺寸，用完自动恢复出厂大小。"""
+        """借りてサイズを変え、使い終わったら自動で初期サイズに戻す。"""
         self.addCleanup(self.app.reset_size)
         self.app.win_x, self.app.win_y = 300, 300
         self.app._apply_geometry()
@@ -213,7 +213,7 @@ class UiSmokeTest(unittest.TestCase):
         app = self.restorable()
         right = app.win_x + app.width_px
         app._press(_Event(app.win_x))
-        app._motion(_Event(app.win_x + app.px(100)))      # 往右拖 = 变窄
+        app._motion(_Event(app.win_x + app.px(100)))      # 右へドラッグ = 狭くなる
         app._release(_Event(0))
         self.assertLess(app.bar_width, app.metrics.bar_width)
         self.assertAlmostEqual(app.win_x + app.width_px, right, delta=1)
@@ -222,7 +222,7 @@ class UiSmokeTest(unittest.TestCase):
         app = self.restorable()
         grip = app.win_x + app.width_px - 1
         app._press(_Event(grip))
-        app._motion(_Event(app.win_x - app.px(400)))      # 使劲往左拖
+        app._motion(_Event(app.win_x - app.px(400)))      # 左へ思い切りドラッグ
         app._release(_Event(0))
         self.assertEqual(app.bar_width, app.metrics.min_bar_width)
 
@@ -231,7 +231,7 @@ class UiSmokeTest(unittest.TestCase):
         roomy = app.panel_height
         app.bar_width = app.metrics.min_bar_width
         app._resize_layout()
-        self.assertGreater(app.panel_height, roomy)       # 换行多了，面板变高
+        self.assertGreater(app.panel_height, roomy)       # 折り返しが増えてパネルが高くなる
         for _title, chips in app._panel_rows:
             for chip, chip_w in chips:
                 self.assertLessEqual(int(chip.place_info()["x"]) + chip_w,
@@ -253,13 +253,13 @@ class UiSmokeTest(unittest.TestCase):
         self.assertLess(app.result.winfo_x() + app.result.winfo_width(),
                         app.width_px)
 
-    # -- 整体缩放 --------------------------------------------------------
+    # -- 全体の拡大縮小 --------------------------------------------------------
     def test_zoom_scales_fonts_and_window_together(self):
         app = self.restorable()
         font_before, width_before = app.font_input.cget("size"), app.width_px
         app.zoom_by(3)
         self.assertAlmostEqual(app.zoom, 1.3, places=2)
-        self.assertLess(app.font_input.cget("size"), font_before)   # 负数字号
+        self.assertLess(app.font_input.cget("size"), font_before)   # 負のフォントサイズ
         self.assertGreater(app.width_px, width_before)
         app.root.update_idletasks()
         self.assertEqual(app.root.winfo_width(), app.width_px)
@@ -277,7 +277,7 @@ class UiSmokeTest(unittest.TestCase):
         app.zoom_by(2)
         self.assertEqual(app.text(), "27*27")
         self.assertEqual(app.result_text, "= 729")
-        app.set_text("2**5")                       # 新控件上的绑定还活着
+        app.set_text("2**5")                       # 新しいウィジェットでも割り当てが生きている
         self.assertEqual(app.result_text, "= 32")
 
     def test_reset_size_restores_both_defaults(self):
@@ -288,9 +288,9 @@ class UiSmokeTest(unittest.TestCase):
         self.assertEqual(app.bar_width, app.metrics.bar_width)
         self.assertEqual(app.zoom, 1.0)
 
-    # -- 多行模式 --------------------------------------------------------
+    # -- 複数行モード --------------------------------------------------------
     def in_multiline(self):
-        """切到多行，测完自动切回单行并清干净。"""
+        """複数行に切り替え、テスト後は自動で 1 行に戻してきれいにする。"""
         self.addCleanup(self._back_to_single)
         if not self.app.multiline:
             self.app.toggle_multiline()
@@ -307,10 +307,10 @@ class UiSmokeTest(unittest.TestCase):
                 if label.winfo_manager()]
 
     def anchored_results(self):
-        """贴在屏幕上的每个结果 -> (它落在第几行, 写的什么)。
+        """画面に貼られた各結果 -> (何行目に来ているか, 何と書いてあるか)。
 
-        行号是反查出来的：拿标签的 y 去比对每一行 dlineinfo 算出的基线位置。
-        对不上任何一行就是 None，说明结果飘了。
+        行番号は逆引きで求める：ラベルの y を、各行の dlineinfo から求めたベースラインの位置と照らし合わせる。
+        どの行とも合わなければ None で、結果がずれているということ。
         """
         app = self.app
         pad_y = max(0, (app.px(app.metrics.bar_height)
@@ -326,7 +326,7 @@ class UiSmokeTest(unittest.TestCase):
                 for label in app._line_labels if label.winfo_manager()]
 
     def long_script(self, count=30):
-        """一段够长、必须滚动才看得完的草稿：第 i 行（0 起）的结果是 i+2。"""
+        """スクロールしないと全部見られないくらい長い下書き：i 行目（0 始まり）の結果は i+2。"""
         app = self.in_multiline()
         app.set_text("\n".join(f"show {i}+1" for i in range(1, count + 1)))
         app.root.update()
@@ -345,12 +345,12 @@ class UiSmokeTest(unittest.TestCase):
         self.addCleanup(self._back_to_single)
         app.set_text("27*27")
         app.toggle_multiline()
-        self.assertEqual(app.text(), "")               # 切过去是空白的
+        self.assertEqual(app.text(), "")               # 切り替えた先は空
         app.set_text("a = 2\na*3")
         app.toggle_multiline()
-        self.assertEqual(app.text(), "27*27")          # 单行草稿还在
+        self.assertEqual(app.text(), "27*27")          # 1 行の下書きは残っている
         app.toggle_multiline()
-        self.assertEqual(app.text(), "a = 2\na*3")     # 多行草稿也还在
+        self.assertEqual(app.text(), "a = 2\na*3")     # 複数行の下書きも残っている
 
     def test_newlines_survive_only_in_multiline(self):
         app = self.in_multiline()
@@ -358,7 +358,7 @@ class UiSmokeTest(unittest.TestCase):
         self.assertEqual(app.text(), "a = 2\na*3")
         app.toggle_multiline()
         app.set_text("a = 2\na*3")
-        self.assertEqual(app.text(), "a = 2 a*3")      # 单行里换行压成空格
+        self.assertEqual(app.text(), "a = 2 a*3")      # 1 行では改行が空白になる
 
     def test_lines_share_variables_and_only_the_last_shows(self):
         app = self.in_multiline()
@@ -370,7 +370,7 @@ class UiSmokeTest(unittest.TestCase):
         app = self.in_multiline()
         app.set_text("show a = 2\nshow a*3\na*4")
         app.root.update_idletasks()
-        # 赋值行只显示值，变量名就在左边摆着
+        # 代入の行は値だけを表示する。変数名は左に書いてある
         self.assertEqual(self.shown_results(), ["= 2", "= 6", "= 8"])
 
     def test_results_line_up_with_the_lines_they_belong_to(self):
@@ -385,7 +385,7 @@ class UiSmokeTest(unittest.TestCase):
             self.assertAlmostEqual(lower - upper, line_h, delta=2)
 
     def test_results_stay_on_their_lines_while_scrolling(self):
-        """滚轮/光标把视野挪走之后，结果列必须跟着一起挪。"""
+        """ホイールやカーソルで表示範囲が動いたら、結果列も一緒に動かなければならない。"""
         app = self.long_script()
         for step in (0, -6, 3, -20, 9):
             if step:
@@ -394,13 +394,13 @@ class UiSmokeTest(unittest.TestCase):
             anchored = self.anchored_results()
             self.assertTrue(anchored)
             for index, text in anchored:
-                self.assertIsNotNone(index, f"结果「{text}」没落在任何一行上")
+                self.assertIsNotNone(index, f"結果「{text}」がどの行にも来ていない")
                 self.assertEqual(text, f"= {index + 2}")
 
     def test_every_visible_line_keeps_its_result_after_a_pixel_scroll(self):
-        """滚轮是按像素滚的，会露出半行——那半行也得有自己的结果。"""
+        """ホイールはピクセル単位でスクロールするので半行が見えることがある——その半行にも結果が要る。"""
         app = self.long_script()
-        app.entry.yview_moveto(0.0)          # 先离开底部，不然滚不动
+        app.entry.yview_moveto(0.0)          # まず一番下から離れる。そうしないとスクロールできない
         app.root.update()
         app.entry.yview_scroll(app.font_input.metrics("linespace") // 2, "pixels")
         app.root.update()
@@ -408,7 +408,7 @@ class UiSmokeTest(unittest.TestCase):
         self.assertEqual(len(self.shown_results()), len(visible))
 
     def test_zooming_in_multiline_keeps_working(self):
-        """Ctrl+滚轮会重建界面，重建时不能再去问已经拆掉的旧输入框。"""
+        """Ctrl+ホイールで画面が作り直される。作り直しの最中に、壊した古い入力欄に問い合わせてはいけない。"""
         app = self.in_multiline()
         self.addCleanup(app.reset_size)
         app.set_text("show 1+1\nshow 2+2")
@@ -421,7 +421,7 @@ class UiSmokeTest(unittest.TestCase):
         app = self.in_multiline()
         app.set_text("a = 1\nshow 1/0\nshow a+1")
         app.root.update_idletasks()
-        self.assertEqual(self.shown_results(), ["除数不能为 0", "= 2"])
+        self.assertEqual(self.shown_results(), ["0 で割ることはできません", "= 2"])
         reds = [label for label in app._line_labels
                 if label.winfo_manager() and label.cget("fg") == app.palette.error]
         self.assertEqual(len(reds), 1)
@@ -451,7 +451,7 @@ class UiSmokeTest(unittest.TestCase):
         app.set_text("r = 3\nh = 10\nr*h")
         app.commit()
         self.assertEqual(self.copied, ["30"])
-        app.set_text("ans+1")                          # commit 之后 ans 也更新了
+        app.set_text("ans+1")                          # commit 後は ans も更新されている
         self.assertEqual(app.script[-1].result.display, "31")
 
     def test_multiline_history_is_kept_apart_from_single_line(self):
@@ -461,7 +461,7 @@ class UiSmokeTest(unittest.TestCase):
         app.set_text("a = 2\na*3")
         app.commit()
         self.assertEqual(app.history_multi, ["a = 2\na*3"])
-        self.assertEqual(app.history, [])              # 没污染单行历史
+        self.assertEqual(app.history, [])              # 1 行の履歴は汚れていない
         app.set_text("")
         app.history_index = len(app.history_multi)
         app.recall(-1)
@@ -475,7 +475,7 @@ class UiSmokeTest(unittest.TestCase):
         self.assertIn("2**3", app.placeholder.cget("text"))
         self.assertNotIn("Ctrl+Enter", app._hint_default())
 
-    # -- 真发按键：直接调方法证明不了绑定是对的 -----------------------------
+    # -- 実際にキーを送る：メソッドを直接呼んでも割り当てが正しいことは証明できない -----------------------------
     def press(self, sequence):
         self.app.entry.focus_force()
         self.app.root.update()
@@ -502,7 +502,7 @@ class UiSmokeTest(unittest.TestCase):
         self.assertEqual(self.copied, ["42"])
 
     def test_ctrl_k_opens_the_panel_without_eating_the_line(self):
-        """Text 的类绑定里 Ctrl+K 是「删到行尾」，必须被我们拦下。"""
+        """Text のクラスバインディングでは Ctrl+K が「行末まで削除」なので、こちらで止めなければならない。"""
         app = self.in_multiline()
         app.set_text("a = 6\na*7")
         was_open = app.panel_open

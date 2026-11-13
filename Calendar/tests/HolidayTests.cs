@@ -13,8 +13,8 @@ namespace KKCalendar.Tests
         static DateTime D(int y, int m, int d) => new DateTime(y, m, d);
 
         /// <summary>
-        /// 规则算出来的，和内閣府 CSV 逐日比对（1955 年至 CSV 的最后一年）。
-        /// 两边是独立来源：一边是照法律条文写的规则 + 星历算的春分秋分，一边是官方公布的名单。
+        /// 規則で計算した結果を、内閣府 CSV と 1 日ずつ照合する（1955 年から CSV の最終年まで）。
+        /// 両者は独立したソース：一方は法律の条文どおりに書いた規則 + 暦から計算した春分・秋分、もう一方は公式に発表された一覧。
         /// </summary>
         [Fact]
         public void RulesMatchCabinetOfficeCsv()
@@ -27,12 +27,12 @@ namespace KKCalendar.Tests
                 var rules = HolidayRules.ForYear(year);
                 var csv = Official.Where(p => p.Key.Year == year).ToDictionary(p => p.Key, p => p.Value);
                 foreach (var day in csv.Keys.Except(rules.Keys))
-                    problems.Add($"规则漏了 {day:yyyy-MM-dd} {csv[day]}");
+                    problems.Add($"規則に抜けている {day:yyyy-MM-dd} {csv[day]}");
                 foreach (var day in rules.Keys.Except(csv.Keys))
-                    problems.Add($"规则多了 {day:yyyy-MM-dd} {rules[day]}");
+                    problems.Add($"規則に余分にある {day:yyyy-MM-dd} {rules[day]}");
                 foreach (var day in csv.Keys.Intersect(rules.Keys))
                     if (!NamesAgree(csv[day], rules[day]))
-                        problems.Add($"{day:yyyy-MM-dd} 名称不同: CSV={csv[day]} 规则={rules[day]}");
+                        problems.Add($"{day:yyyy-MM-dd} 名称が違う: CSV={csv[day]} 規則={rules[day]}");
             }
             Assert.True(problems.Count == 0, string.Join("\n", problems));
         }
@@ -45,18 +45,18 @@ namespace KKCalendar.Tests
                 return rule == HolidayRules.Substitute || rule == HolidayRules.Citizens;
             if (csv == "休日（祝日扱い）")
                 return rule == "天皇の即位の日" || rule == "即位礼正殿の儀";
-            // 2019 年 CSV 写的是「体育の日（スポーツの日）」，法律上那年还叫体育の日
+            // 2019 年の CSV は「体育の日（スポーツの日）」と書いているが、法律上その年はまだ体育の日
             return csv == "体育の日（スポーツの日）" && rule == "体育の日";
         }
 
         [Theory]
-        [InlineData(2026, 9, 22, HolidayRules.Citizens)]   // 敬老の日(21) 和 秋分の日(23) 中间
-        [InlineData(2026, 5, 6, HolidayRules.Substitute)]  // 5/3 是周日，5/4、5/5 是祝日，顺延到 5/6
+        [InlineData(2026, 9, 22, HolidayRules.Citizens)]   // 敬老の日(21) と秋分の日(23) の間
+        [InlineData(2026, 5, 6, HolidayRules.Substitute)]  // 5/3 が日曜、5/4・5/5 が祝日なので 5/6 に振替
         [InlineData(2026, 11, 23, "勤労感謝の日")]
-        [InlineData(2028, 1, 10, "成人の日")]              // CSV 之外，纯规则
-        [InlineData(2032, 9, 21, HolidayRules.Citizens)]  // 敬老の日(20) 和 秋分の日(22) 中间
-        [InlineData(2033, 3, 21, HolidayRules.Substitute)] // 春分 3/20 是周日
-        [InlineData(1948, 11, 23, "勤労感謝の日")]         // 祝日法施行那年
+        [InlineData(2028, 1, 10, "成人の日")]              // CSV の範囲外、規則のみ
+        [InlineData(2032, 9, 21, HolidayRules.Citizens)]  // 敬老の日(20) と秋分の日(22) の間
+        [InlineData(2033, 3, 21, HolidayRules.Substitute)] // 春分 3/20 が日曜
+        [InlineData(1948, 11, 23, "勤労感謝の日")]         // 祝日法が施行された年
         public void KnownHolidays(int y, int m, int d, string name)
         {
             var book = new HolidayBook(Official);
@@ -86,7 +86,7 @@ namespace KKCalendar.Tests
         [Fact]
         public void BookUsesCsvEvenWhenRulesWouldDiffer()
         {
-            // 假设某年政府临时加了一天休日：CSV 里有、规则里没有，应以 CSV 为准
+            // ある年に政府が臨時の休日を 1 日加えたと仮定：CSV にはあって規則にはない。CSV を優先すべき
             var csv = new Dictionary<DateTime, string>(Official) { [D(2027, 6, 1)] = "休日" };
             var book = new HolidayBook(csv);
             Assert.Equal("休日", book.NameOf(D(2027, 6, 1)));
@@ -99,7 +99,7 @@ namespace KKCalendar.Tests
             var next = book.NextAfter(D(2026, 11, 13));
             Assert.NotNull(next);
             Assert.Equal(D(2026, 11, 23), next!.Value.Key);
-            // 跨年
+            // 年をまたぐ
             Assert.Equal(D(2027, 1, 1), book.NextAfter(D(2026, 11, 23))!.Value.Key);
         }
 

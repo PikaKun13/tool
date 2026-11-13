@@ -1,7 +1,7 @@
-"""面板里每个公式都真的算对了吗？
+"""パネルの公式は、どれも本当に正しく計算できているか？
 
-这里刻意**不拿 math.xxx 当标准答案**——那等于自己验自己。参照物一律另找：
-闭式解、暴力枚举、恒等式、反函数还原、Decimal 高精度、以及跟原生 Python 差分。
+ここではあえて **math.xxx を正解にしない**——それでは自分で自分を検証することになる。比較対象は必ず別の手段で用意する：
+閉形式の解、総当たり、恒等式、逆関数での復元、Decimal による高精度計算、そして素の Python との差分。
 """
 
 import ast
@@ -25,24 +25,24 @@ ALL_ITEMS = [item for section in SECTIONS for item in section.items]
 
 
 class FormulaCase(unittest.TestCase):
-    """带一个求值器，外加「算出来的值」和「约等于」两个小工具。"""
+    """評価器を 1 つ持ち、「計算した値」と「ほぼ等しい」の 2 つの小道具を備える。"""
 
     def setUp(self):
         self.ev = Evaluator()
 
     def val(self, expr):
         result = self.ev.evaluate(expr)
-        self.assertTrue(result.ok, f"{expr} 没算出来：{result.error or '语法不完整'}")
+        self.assertTrue(result.ok, f"{expr} が計算できない：{result.error or '構文が不完全'}")
         return result.value
 
     def near(self, expr, expected, tol=1e-12):
         got = self.val(expr)
         self.assertLessEqual(abs(got - expected), tol * max(1.0, abs(expected)),
-                             f"{expr} = {got!r}，参照值 {expected!r}")
+                             f"{expr} = {got!r}、参照値 {expected!r}")
 
 
 # --------------------------------------------------------------------------
-# 参照实现：全部用定义式硬算，不碰 math
+# 参照実装：すべて定義どおりに愚直に計算し、math には触れない
 # --------------------------------------------------------------------------
 
 def ref_factorial(n):
@@ -86,7 +86,7 @@ def taylor_cos(x, terms=40):
 
 
 class PanelIsWiredUpTest(FormulaCase):
-    """面板上的每个按钮都得指向真实存在的东西。"""
+    """パネルのボタンはどれも、実在するものを指していなければならない。"""
 
     def test_every_function_button_names_a_real_function(self):
         ns = build_namespace()
@@ -96,7 +96,7 @@ class PanelIsWiredUpTest(FormulaCase):
             name = item.insert[:-2]
             with self.subTest(button=item.label):
                 self.assertIn(name, ns)
-                self.assertTrue(callable(ns[name]), f"{name} 不是函数")
+                self.assertTrue(callable(ns[name]), f"{name} は関数ではない")
 
     def test_every_constant_button_evaluates(self):
         for item in ALL_ITEMS:
@@ -106,12 +106,12 @@ class PanelIsWiredUpTest(FormulaCase):
                 self.assertTrue(self.ev.evaluate(item.insert).ok)
 
     def test_no_button_makes_the_bar_flash_red_on_its_own(self):
-        """点一下按钮就蹦红字是吓人的：刚插进去最多算「还没打完」。"""
+        """ボタンを押しただけで赤字が出たら驚く：挿入した直後はせいぜい「書きかけ」扱い。"""
         for item in ALL_ITEMS:
             with self.subTest(button=item.label):
                 result = self.ev.evaluate(item.insert)
                 self.assertIsNone(result.error,
-                                  f"插入 {item.insert!r} 报了「{result.error}」")
+                                  f"{item.insert!r} を挿入したら「{result.error}」と出た")
 
 
 class ConstantsTest(FormulaCase):
@@ -324,7 +324,7 @@ class StatisticsTest(FormulaCase):
 
 
 class TipsAreHonestTest(FormulaCase):
-    """按钮悬停时显示的说明里写了等式，那就得真的等于。"""
+    """ボタンにマウスを乗せたときの説明に等式が書いてあるなら、本当に等しくなければならない。"""
 
     CLAIM = re.compile(r"([A-Za-z0-9_()\[\], .*/%+-]*?[)\d])\s*=\s*([-\d.]+)")
 
@@ -342,25 +342,25 @@ class TipsAreHonestTest(FormulaCase):
                 checked += 1
                 with self.subTest(button=item.label, claim=f"{expr} = {expected}"):
                     self.near(expr, float(expected))
-        self.assertGreaterEqual(checked, 5, "tip 里的等式一条都没提取到，正则该修了")
+        self.assertGreaterEqual(checked, 5, "tip から等式が 1 つも取り出せなかった。正規表現を直すこと")
 
     def test_the_prose_in_the_tips_also_holds(self):
         self.assertTrue(str(self.val("pi")).startswith("3.14159"))    # 「3.14159…」
         self.assertTrue(str(self.val("e")).startswith("2.71828"))     # 「2.71828…」
         self.assertEqual(self.val("tau"), 2 * self.val("pi"))         # 「2π」
-        self.assertIsInstance(self.val("3+4j"), complex)              # 「如 3+4j」
+        self.assertIsInstance(self.val("3+4j"), complex)              # 「3+4j」
         self.assertEqual(self.val("sqrt(81)"), 9.0)                   # 「平方根」
         self.near("cbrt(64)", 4.0, 1e-15)                             # 「立方根」
-        self.near("exp(3)", self.val("e**3"))                         # 「e 的多少次方」
-        self.assertEqual(self.val("log2(64)"), 6.0)                   # 「以 2 为底」
-        self.assertEqual(self.val("log10(100000)"), 5.0)              # 「以 10 为底」
-        self.near("sin(pi/2)", 1.0, 1e-15)                            # 「参数是弧度」
-        self.near("degrees(pi/2)", 90.0, 1e-13)                       # 「弧度转角度」
-        self.near("radians(90)", math.pi / 2, 1e-15)                  # 「角度转弧度」
-        self.assertEqual(self.val("gcd(48, 180)"), 12)                # 「最大公约数」
+        self.near("exp(3)", self.val("e**3"))                         # 「e の x 乗」
+        self.assertEqual(self.val("log2(64)"), 6.0)                   # 「底が 2 の対数」
+        self.assertEqual(self.val("log10(100000)"), 5.0)              # 「底が 10 の対数」
+        self.near("sin(pi/2)", 1.0, 1e-15)                            # 「引数はラジアン」
+        self.near("degrees(pi/2)", 90.0, 1e-13)                       # 「ラジアン → 度」
+        self.near("radians(90)", math.pi / 2, 1e-15)                  # 「度 → ラジアン」
+        self.assertEqual(self.val("gcd(48, 180)"), 12)                # 「最大公約数」
         self.assertEqual(self.val("lcm(4, 6)"), 12)                   # 「最小公倍数」
-        self.assertEqual(self.val("comb(10, 3)"), 120)                # 「组合数」
-        self.assertEqual(self.val("perm(10, 3)"), 720)                # 「排列数」
+        self.assertEqual(self.val("comb(10, 3)"), 120)                # 「組み合わせ」
+        self.assertEqual(self.val("perm(10, 3)"), 720)                # 「順列」
         self.assertEqual(self.val("sum(range(101))"), 5050)           # 「sum(range(101))」
 
     def test_the_parenthesis_button_puts_the_caret_inside(self):
@@ -369,7 +369,7 @@ class TipsAreHonestTest(FormulaCase):
 
 
 class NormalizationKeepsMeaningTest(FormulaCase):
-    """好看的符号翻译成 Python 之后，算出来必须一模一样。"""
+    """見た目のよい記号を Python に翻訳した後も、計算結果はまったく同じでなければならない。"""
 
     PAIRS = [
         ("2×3", "2*3"), ("2·3", "2*3"), ("6÷3", "6/3"), ("5−2", "5-2"),
@@ -392,7 +392,7 @@ class NormalizationKeepsMeaningTest(FormulaCase):
 
 
 class DifferentialAgainstPythonTest(FormulaCase):
-    """随机造算式，跟原生 Python 逐条比。这是最能兜住意外的一层。"""
+    """ランダムに式を作り、素の Python と 1 つずつ比べる。想定外を受け止めるのにいちばん効く層。"""
 
     ATOMS = ["1", "2", "3", "7", "0.5", "2.25", "pi", "e", "10", "1_000"]
     UNARY = ["sqrt", "exp", "sin", "cos", "atan", "tanh", "abs", "log10"]
@@ -420,22 +420,22 @@ class DifferentialAgainstPythonTest(FormulaCase):
             try:
                 expected = eval(expr, {"__builtins__": {}}, dict(reference))
             except Exception:
-                continue                       # Python 自己都算不了，不算数
+                continue                       # Python 自身でも計算できないものは数えない
             got = self.ev.evaluate(expr)
-            if not got.ok and got.error in ("结果太大了", "算式太长了"):
-                continue                       # 界面为了不卡死主动拦掉的
+            if not got.ok and got.error in ("結果が大きすぎます", "式が長すぎます"):
+                continue                       # 画面が固まらないよう意図的に止めたもの
             compared += 1
             with self.subTest(expr=expr):
-                self.assertTrue(got.ok, f"Python 算得出 {expected!r}，CalcBar 却说 {got.error}")
+                self.assertTrue(got.ok, f"Python では {expected!r} になるのに、CalcBar は {got.error} と言う")
                 if isinstance(expected, float) and math.isnan(expected):
                     self.assertTrue(math.isnan(got.value))
                 else:
                     self.assertEqual(got.value, expected)
-        self.assertGreater(compared, 2000, "样本太少，随机生成器可能坏了")
+        self.assertGreater(compared, 2000, "サンプルが少なすぎる。ランダム生成器が壊れているかもしれない")
 
 
 class ReadmeClaimTest(FormulaCase):
-    """README 里贴出来的每个结果都得对得上。"""
+    """README に載せた結果は、どれも合っていなければならない。"""
 
     ROWS = [
         ("27*27", 729), ("2**3", 8), ("2*3", 6), ("10//3", 3), ("10%3", 1),
@@ -462,7 +462,7 @@ class ReadmeClaimTest(FormulaCase):
 
     def test_unclosed_parenthesis_still_calculates(self):
         self.assertEqual(self.ev.evaluate("sqrt(16").value, 4.0)
-        self.assertEqual(self.ev.evaluate("1+2)").error, "右括号多了")
+        self.assertEqual(self.ev.evaluate("1+2)").error, "閉じ括弧が多すぎます")
 
     def test_variables_and_ans_behave_as_documented(self):
         self.ev.evaluate("x = 5")

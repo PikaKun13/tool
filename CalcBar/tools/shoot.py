@@ -1,6 +1,6 @@
-"""开发用：把界面拉起来、填好内容、截自己窗口的图，然后退出。
+"""開発用：画面を立ち上げて内容を入れ、自分のウィンドウのスクリーンショットを撮って終了する。
 
-    python tools/shoot.py <输出png> [算式] [panel]
+    python tools/shoot.py <出力png> [式] [panel]
 """
 
 import sys
