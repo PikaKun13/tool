@@ -1,0 +1,13 @@
+# 编译产物（要分发就发 dist\KKCalendar.exe）
+bin/
+obj/
+dist/
+
+# 开发工具的 Python 环境，和下载的星历（30 MB）、香港天文台年表
+.venv/
+tools/cache/
+__pycache__/
+
+# 运行时在 exe 旁边生成的个人设置、下载的祝日数据、日志
+KKCalendar.ini
+KKCalendar.log

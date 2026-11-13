@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <!-- .NET Framework 4.8 是 Windows 10/11 自带的，exe 拷过去就能跑 -->
+    <TargetFramework>net48</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <AssemblyName>KKCalendar</AssemblyName>
+    <RootNamespace>KKCalendar</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\KKCalendar.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <Product>KKCalendar</Product>
+    <Description>日本の祝日と六曜が分かるカレンダー</Description>
+    <Copyright>KKCalendar</Copyright>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Net.Http" />
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 内閣府「国民の祝日」CSV 的出厂快照（Shift_JIS 原样）。联网更新后以下载的为准 -->
+    <EmbeddedResource Include="Data\syukujitsu.csv" LogicalName="syukujitsu.csv" />
+    <Resource Include="Assets\KKCalendar.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="KKCalendar.Tests" />
+  </ItemGroup>
+
+</Project>

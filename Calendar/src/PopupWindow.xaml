@@ -1,0 +1,103 @@
+<Window x:Class="KKCalendar.PopupWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="KKCalendar"
+        WindowStyle="None" ResizeMode="NoResize" ShowInTaskbar="False" Topmost="True"
+        SizeToContent="WidthAndHeight" Background="Transparent"
+        Language="ja-JP" FontFamily="Segoe UI Variable Text, Segoe UI, Yu Gothic UI"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Ideal">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome GlassFrameThickness="-1" CaptionHeight="0" ResizeBorderThickness="0"
+                      CornerRadius="0" UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <!-- 扁平按钮：平时透明，悬停时浅浅一层底色 -->
+        <Style x:Key="FlatButton" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Height" Value="30" />
+            <Setter Property="MinWidth" Value="32" />
+            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource HoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{DynamicResource PressedBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource FlatButton}">
+            <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets" />
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Width" Value="32" />
+            <Setter Property="Padding" Value="0" />
+        </Style>
+    </Window.Resources>
+
+    <Border x:Name="Root" Width="352">
+        <StackPanel x:Name="Body">
+            <StackPanel.RenderTransform>
+                <TranslateTransform x:Name="BodySlide" />
+            </StackPanel.RenderTransform>
+
+            <!-- 今天 -->
+            <StackPanel Margin="20,16,20,14">
+                <TextBlock x:Name="TodayTitle" FontSize="20" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextBrush}" />
+                <TextBlock x:Name="TodaySub" FontSize="12" Margin="0,5,0,0"
+                           Foreground="{DynamicResource SecondaryBrush}" />
+                <TextBlock x:Name="NextHoliday" FontSize="12" Margin="0,3,0,0"
+                           Foreground="{DynamicResource SecondaryBrush}" />
+            </StackPanel>
+
+            <Border Height="1" Background="{DynamicResource SeparatorBrush}" />
+
+            <!-- 月份导航 -->
+            <Grid Margin="19,10,13,2">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock x:Name="MonthTitle" FontSize="15" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextBrush}" />
+                    <TextBlock x:Name="MonthEra" FontSize="12" Margin="8,0,0,1" VerticalAlignment="Bottom"
+                               Foreground="{DynamicResource TertiaryBrush}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="TodayButton" Style="{StaticResource FlatButton}" FontSize="12"
+                            Content="今日" ToolTip="今月に戻る (Home)" Margin="0,0,2,0" />
+                    <Button x:Name="PrevButton" Style="{StaticResource IconButton}" Content="&#xE70E;"
+                            ToolTip="前の月" />
+                    <Button x:Name="NextButton" Style="{StaticResource IconButton}" Content="&#xE70D;"
+                            ToolTip="次の月" />
+                </StackPanel>
+            </Grid>
+
+            <!-- 曜日 + 日付 -->
+            <UniformGrid x:Name="WeekHeader" Columns="7" Rows="1" Height="28" Margin="15,4,15,0" />
+            <UniformGrid x:Name="Days" Columns="7" Rows="6" Margin="15,0,15,10">
+                <UniformGrid.RenderTransform>
+                    <TranslateTransform x:Name="DaysSlide" />
+                </UniformGrid.RenderTransform>
+            </UniformGrid>
+
+            <Border Height="1" Background="{DynamicResource SeparatorBrush}" />
+
+            <!-- 本月的祝日 -->
+            <Grid x:Name="HolidayList" Margin="20,10,20,14" Height="80" />
+        </StackPanel>
+    </Border>
+</Window>
